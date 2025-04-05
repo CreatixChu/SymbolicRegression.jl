@@ -115,9 +115,15 @@ if true
 
     dominating = calculate_pareto_frontier(hall_of_fame)
 
-    trees = [member.tree for member in dominating]
+    # trees = [member.tree for member in dominating]
+    trees = [member.tree.tree for member in hall_of_fame.members]
 
-    initial_population = [[hall_of_fame.members]; [hall_of_fame.members]]
+    expressions = [
+        ["x1 + 1", "x1 + 2"];
+        ["x2 + 1", "x2 + 2"]
+    ]
+
+    initial_population = [[trees]; [trees]]
 
     println(typeof(initial_population))
     println("Press any key to continue...")

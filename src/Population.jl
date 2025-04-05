@@ -66,11 +66,11 @@ function Population(
             [
                 PopMember(
                     dataset,
-                    tree_container.tree.tree,
+                    tree,
                     options;
                     parent=-1,
                     deterministic=options.deterministic,
-                ) for tree_container in trees
+                ) for tree in trees
             ],
             population_size,
         )
