@@ -24,4 +24,3 @@ docs/src/index.md
 **/*.json
 LocalPreferences.toml
 private
-Project.toml
