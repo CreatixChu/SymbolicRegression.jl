@@ -5,20 +5,22 @@ using CSV
 using DataFrames
 using Random
 using Plots
+include("config.jl")
 gr()
+cfg=CONFIG
 
-function update_feature!(node::Node)
+function update_feature!(node::Node, source_feature::Int, target_feature::Int)
     # Only update leaf (degree==0) feature nodes (non-constant)
     if node.degree == 0 && !node.constant
-        if node.feature == 1
-            node.feature = 2
+        if node.feature == source_feature
+            node.feature = target_feature
         end
     elseif node.degree >= 1
         # Recursively update children: left child is always defined;
-        update_feature!(node.l)
+        update_feature!(node.l, source_feature, target_feature)
         # Right child is defined only for binary operators (degree==2)
         if node.degree == 2
-            update_feature!(node.r)
+            update_feature!(node.r, source_feature, target_feature)
         end
     end
     return node
@@ -141,15 +143,15 @@ function p2f(x)
 end
 #region Low level API
 options = SymbolicRegression.Options(;
-    binary_operators=[+, *, /, -], unary_operators=[exp, pow2, pow3, pow4, pow5]
+    binary_operators=cfg["binary_operators"], unary_operators=cfg["unary_operators"]
 )
 
 hall_of_fame_m_x1 = equation_search(
-        reshape(m_x1, 1, :), m_y1; options=options, parallelism=:serial, niterations=10
+        reshape(m_x1, 1, :), m_y1; options=options, parallelism=cfg["parallelism_for_marginal_sr"], niterations=cfg["niterations_for_marginal_sr"]
     )
 
 hall_of_fame_m_x2 = equation_search(
-        reshape(m_x2, 1, :), m_y2; options=options, parallelism=:serial, niterations=10
+        reshape(m_x2, 1, :), m_y2; options=options, parallelism=cfg["parallelism_for_marginal_sr"], niterations=cfg["niterations_for_marginal_sr"]
     )
    
 dominating_m_x1 = calculate_pareto_frontier(hall_of_fame_m_x1)
@@ -160,7 +162,7 @@ trees_m_x2 = [member.tree for member in dominating_m_x2]
 
 
 for i in eachindex(hall_of_fame_m_x2.members)
-    update_feature!(hall_of_fame_m_x2.members[i].tree.tree)
+    update_feature!(hall_of_fame_m_x2.members[i].tree.tree, 1, 2)
 end
 
 conditional_hall_of_fame_x1 =[]
@@ -168,7 +170,7 @@ dominating_c_x1 = []
 trees_c_x1 = []
 for i in eachindex(conditional_data_x1)
     append!(conditional_hall_of_fame_x1, [equation_search(
-        reshape(conditional_data_x1[i][1], 1, :), conditional_data_y1[i][1]; options=options, parallelism=:serial, niterations=10
+        reshape(conditional_data_x1[i][1], 1, :), conditional_data_y1[i][1]; options=options, parallelism=cfg["parallelism_for_conditional_sr"], niterations=cfg["niterations_for_conditional_sr"]
     )])
     append!(dominating_c_x1, [calculate_pareto_frontier(conditional_hall_of_fame_x1[i])])
     append!(trees_c_x1, [member.tree for member in dominating_c_x1[i]])
@@ -179,12 +181,12 @@ dominating_c_x2 = []
 trees_c_x2 = []
 for i in eachindex(conditional_data_x2)
     append!(conditional_hall_of_fame_x2, [equation_search(
-        reshape(conditional_data_x2[i][1], 1, :), conditional_data_y2[i][1]; options=options, parallelism=:serial, niterations=10
+        reshape(conditional_data_x2[i][1], 1, :), conditional_data_y2[i][1]; options=options, parallelism=cfg["parallelism_for_conditional_sr"], niterations=cfg["niterations_for_conditional_sr"]
     )])
     append!(dominating_c_x2, [calculate_pareto_frontier(conditional_hall_of_fame_x2[i])])
     append!(trees_c_x2, [[member.tree for member in conditional_hall_of_fame_x2[i].members]])
     for j in eachindex(trees_c_x2[i])
-        update_feature!(trees_c_x2[i][j].tree)
+        update_feature!(trees_c_x2[i][j].tree, 1, 2)
     end
 end
 
@@ -214,14 +216,14 @@ readline()
 populations = [joint_initial_population[i:i+29] for i in 1:30:480]
 
 options1 = SymbolicRegression.Options(;
-    binary_operators=[+, *, /, -], unary_operators=[exp, pow2, pow3, pow4, pow5], populations = length(populations), population_size = length(populations[1])
+    binary_operators=cfg["binary_operators"], unary_operators=cfg["unary_operators"], populations = length(populations), population_size = length(populations[1])
     )
 
 println("Press any key to continue...at end")
 readline()
 
 hof = equation_search(
-        reshape(joint_data_x, 2, :), joint_data_y; options=options1, parallelism=:serial, initial_populations=populations
+        reshape(joint_data_x, 2, :), joint_data_y; options=options1, parallelism=:serial, initial_populations=populations, niterations=cfg["niterations_for_joint_sr"]
 )
 
 
