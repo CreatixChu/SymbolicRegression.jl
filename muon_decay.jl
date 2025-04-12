@@ -2,14 +2,6 @@
 using Pkg
 Pkg.activate(".")
 using SymbolicRegression
-# function ensure_package(pkg::String)
-#    if !(pkg in keys(Pkg.installed()))
-#        Pkg.add(pkg)
-#    end
-#end
-#for pkg in ["CSV", "DataFrames", "Random", "Plots"]
-#    ensure_package(pkg)
-#end
 using CSV
 using DataFrames
 using Random
@@ -17,10 +9,24 @@ using StatsBase
 using IterTools
 include("./config_management/muon_decay_config.jl")
 using Base.Threads
+using LoggingExtras
+using Dates
+using FilePathsBase
 # using Plots
 # gr()
 cfg_data=CONFIG_data
 cfg_sr=CONFIG_sr
+
+timestamp = Dates.format(now(), "yyyymmdd_HHMMSS")
+log_dir = "logs/log_$timestamp"
+if !isdir(log_dir)
+    mkpath(log_dir)
+end
+
+with_logger(FileLogger(joinpath(log_dir, "meta_data.log"))) do
+    cfg_symbolized = Dict(Symbol(k) => v for (k, v) in cfg_sr)
+    @info("Basic Information", thread_num=Threads.nthreads(), cfg_symbolized...)
+end
 #endregion
 
 println("Imports Completed!...Press any key to continue...")
@@ -85,24 +91,34 @@ marginal_halls_of_fame = Vector{Any}(undef, cfg_data["num_dimensions"])
 dominating_pareto_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
 trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
 @threads for d in 1:cfg_data["num_dimensions"]
-    hall_of_fame = equation_search(
-        reshape(m_xd[d], 1, :), m_yd[d]; options=options, parallelism=cfg_sr["parallelism_for_marginal_sr"], niterations=cfg_sr["niterations_for_marginal_sr"]
-    )
-    pareto = calculate_pareto_frontier(hall_of_fame)
-    trees = [member.tree for member in pareto]
 
-    for member in eachindex(hall_of_fame.members)
-        update_feature!(hall_of_fame.members[member].tree.tree, 1, d)
+    #region marginal_log
+    with_logger(FileLogger(joinpath(log_dir, "marginal$(d).log"))) do
+        hall_of_fame = equation_search(
+            reshape(m_xd[d], 1, :), m_yd[d]; 
+            options=options, 
+            parallelism=cfg_sr["parallelism_for_marginal_sr"], 
+            niterations=cfg_sr["niterations_for_marginal_sr"],
+            logger=SRLogger(current_logger(), log_interval=10)
+        )
+
+        pareto = calculate_pareto_frontier(hall_of_fame)
+        trees = [member.tree for member in pareto]
+
+        for member in eachindex(hall_of_fame.members)
+            update_feature!(hall_of_fame.members[member].tree.tree, 1, d)
+        end
+        
+        marginal_halls_of_fame[d] = hall_of_fame
+        dominating_pareto_marginals[d] = pareto
+        trees_marginals[d] = trees
     end
-
-    marginal_halls_of_fame[d] = hall_of_fame
-    dominating_pareto_marginals[d] = pareto
-    trees_marginals[d] = trees
 end
 #endregion
 
 println("Marginal SR Completed!...Press any key to continue...")
 readline()
+
 
 #region Conditional SR calls
 conditional_halls_of_fame_per_slice = Vector{Any}(undef, cfg_data["num_conditional_slices"])
@@ -118,17 +134,25 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
     x = reshape(c_xd[d][slice], 1, :)
     y = c_yd[d][slice]
 
-    hall_of_fame = equation_search(x, y; options=options, parallelism=cfg_sr["parallelism_for_conditional_sr"], niterations=cfg_sr["niterations_for_conditional_sr"])
-    pareto = calculate_pareto_frontier(hall_of_fame)
-    trees = [member.tree for member in pareto]
+    with_logger(FileLogger(joinpath(log_dir, "conditional_$(d)_$(slice).log"))) do
+        hall_of_fame = equation_search(
+            x, y; 
+            options=options, 
+            parallelism=cfg_sr["parallelism_for_conditional_sr"], 
+            niterations=cfg_sr["niterations_for_conditional_sr"],
+            logger=SRLogger(current_logger(), log_interval=10)
+        )
+        pareto = calculate_pareto_frontier(hall_of_fame)
+        trees = [member.tree for member in pareto]
 
-    for member in eachindex(hall_of_fame.members)
-        update_feature!(hall_of_fame.members[member].tree.tree, 1, d)
+        for member in eachindex(hall_of_fame.members)
+            update_feature!(hall_of_fame.members[member].tree.tree, 1, d)
+        end
+
+        conditional_halls_of_fame[d][slice] = hall_of_fame
+        dominating_pareto_conditionals[d][slice] = pareto
+        trees_conditionals[d][slice] = trees
     end
-
-    conditional_halls_of_fame[d][slice] = hall_of_fame
-    dominating_pareto_conditionals[d][slice] = pareto
-    trees_conditionals[d][slice] = trees
 end
 #endregion
 
@@ -194,9 +218,17 @@ joint_options = SymbolicRegression.Options(;
 println("Starting joint SR call...Press any key to continue...")
 readline()
 
-joint_hall_of_fame = equation_search(
-        reshape(joint_data_x, cfg_data["num_dimensions"], :), joint_data_y; options=joint_options, parallelism=cfg_sr["parallelism_for_joint_sr"], initial_populations=populations, niterations=cfg_sr["niterations_for_joint_sr"]
-)
+with_logger(FileLogger(joinpath(log_dir, "final.txt"))) do
+    joint_hall_of_fame = equation_search(
+            reshape(joint_data_x, cfg_data["num_dimensions"], :), 
+            joint_data_y; 
+            options=joint_options,
+            parallelism=cfg_sr["parallelism_for_joint_sr"], 
+            initial_populations=populations, 
+            niterations=cfg_sr["niterations_for_joint_sr"], 
+            logger=SRLogger(current_logger(), log_interval=10)
+    )
+end
 #endregion
 
 println("Joint SR Completed!")
