@@ -1,3 +1,10 @@
+
+pow2(x) = x^2
+pow3(x) = x^3
+pow4(x) = x^4
+pow5(x) = x^5
+
+
 const CONFIG = Dict(
     "data_path" => "./transfer",
     "num_dimensions" => 2,
@@ -6,9 +13,9 @@ const CONFIG = Dict(
     "binary_operators" => [+, -, *, /],
     "unary_operators" => [exp, pow2, pow3, pow4, pow5],
     "parallelism_for_kde" => :serial,
-    "parallelism_for_marginal_sr" => :serial,
+    "parallelism_for_marginal_sr" => :multithreading,
     "niterations_for_marginal_sr" => 5,
-    "parallelism_for_conditional_sr" => :serial,
+    "parallelism_for_conditional_sr" => :multithreading,
     "niterations_for_conditional_sr" => 5,
     "parallelism_for_joint_sr" => :serial,
     "niterations_for_joint_sr" => 5,
