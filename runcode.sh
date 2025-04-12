@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=JuliaSR            # Job name
-#SBATCH --time=0-00:30:00             # Time limit hrs:min:sec
+#SBATCH --time=0-02:00:00             # Time limit hrs:min:sec
 #SBATCH --ntasks=1                    # Number of tasks (processes)
 #SBATCH --cpus-per-task=12            # Number of CPU cores per task
 #SBATCH --mem=8G                      # Memory per node

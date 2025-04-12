@@ -1,24 +1,27 @@
 using Pkg
 Pkg.activate(".")
+using Wandb
 using SymbolicRegression
-
-
-# function ensure_package(pkg::String)
-#    if !(pkg in keys(Pkg.installed()))
-#        Pkg.add(pkg)
-#    end
-#end
-#for pkg in ["CSV", "DataFrames", "Random", "Plots"]
-#    ensure_package(pkg)
-#end
 using CSV
 using DataFrames
 using Random
 using Plots
-include("config.jl")
 using Base.Threads
+using Dates
+using Logging
+
 gr()
+include("config.jl")
 cfg=CONFIG
+
+lg = WandbLogger(project = "SR.jl",
+                 name = "SR-$(now())",
+                 config = cfg)
+global_logger(lg)
+
+
+Wandb.log(lg, Dict("accuracy" => 0.9, "loss" => 0.3))
+Wandb.log(lg, "hello World")
 
 function update_feature!(node::Node, source_feature::Int, target_feature::Int)
     # Only update leaf (degree==0) feature nodes (non-constant)
@@ -117,6 +120,7 @@ trees_c_x1 = Vector{Any}(undef, n1)
     dominating_c_x1[i] = pareto
 
     trees_c_x1[i] = [member.tree for member in pareto]
+    # @info "metrics" epoch=i
 end
 
 n2 = length(conditional_data_x2)
@@ -139,6 +143,7 @@ trees_c_x2 = Vector{Any}(undef, n2)
         update_feature!(tree.tree, 1, 2)
     end
     trees_c_x2[i] = trees
+    # @info "metrics" epoch=i + n1
 end
 
 joint_initial_population = []
@@ -177,6 +182,7 @@ hof = equation_search(
         reshape(joint_data_x, 2, :), joint_data_y; options=options1, parallelism=:serial, initial_populations=populations, niterations=cfg["niterations_for_joint_sr"]
 )
 
+close(lg)
 
 
 
