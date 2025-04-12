@@ -1,15 +1,16 @@
 using Pkg
 Pkg.activate(".")
-# using SymbolicRegression
+using SymbolicRegression
 
 
-function ensure_package(pkg::String)
-    if !(pkg in keys(Pkg.installed()))
-        Pkg.add(pkg)
-    end
-end
-for pkg in ["CSV", "DataFrames", "Random", "Plots"]
-    ensure_package(pkg)
+# function ensure_package(pkg::String)
+#    if !(pkg in keys(Pkg.installed()))
+#        Pkg.add(pkg)
+#    end
+#end
+#for pkg in ["CSV", "DataFrames", "Random", "Plots"]
+#    ensure_package(pkg)
+#end
 using CSV
 using DataFrames
 using Random
@@ -18,11 +19,6 @@ include("config.jl")
 using Base.Threads
 gr()
 cfg=CONFIG
-
-
-println("Press any key to continue...")
-readline()
-
 
 function update_feature!(node::Node, source_feature::Int, target_feature::Int)
     # Only update leaf (degree==0) feature nodes (non-constant)

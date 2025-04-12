@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=CC-job              # Job name
-#SBATCH --time=01:00:00                # Time limit hrs:min:sec
-#SBATCH --ntasks=1                     # Number of tasks (processes)
-#SBATCH --cpus-per-task=1              # Number of CPU cores per task
-#SBATCH --gres=gpu:v100:1              # Request 1 v100 GPUs
-#SBATCH --mem=16G                      # Memory per node
+#SBATCH --job-name=JuliaSR            # Job name
+#SBATCH --time=0-00:30:00             # Time limit hrs:min:sec
+#SBATCH --ntasks=1                    # Number of tasks (processes)
+#SBATCH --cpus-per-task=12            # Number of CPU cores per task
+#SBATCH --mem=8G                      # Memory per node
+#SBATCH --output=logslum-%j-%N.out            # the print of xxx.jl will be logged in this file, %N for node name, %j for job id:w
 
 module load StdEnv/2023 julia/1.11.3
-JULIA_NUM_THREADS=4 julia muon_decay.jl
+JULIA_NUM_THREADS=12 julia muon_decay.jl
