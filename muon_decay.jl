@@ -23,8 +23,8 @@ cfg_data=CONFIG_data
 cfg_sr=CONFIG_sr
 #endregion
 
-# println("Imports Completed!...Press any key to continue...")
-# readline()
+println("Imports Completed!...Press any key to continue...")
+readline()
 
 
 #region Load the data
@@ -49,8 +49,8 @@ joint_data_x = vcat([vcat([hcat(x, repeat(info', length(x))) for (x, info) in zi
 joint_data_y = vcat([vcat([y*info for (y, info) in zip(c_yd[1], c_yd_slice_info[1])]...) for d in 1:cfg_data["num_dimensions"]]...)
 #endregion
 
-# println("Data Loaded!...Press any key to continue...")
-# readline()
+println("Data Loaded!...Press any key to continue...")
+readline()
 
 
 #region Helper function to update the feature of a node in the tree
@@ -101,8 +101,8 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
 end
 #endregion
 
-# println("Marginal SR Completed!...Press any key to continue...")
-# readline()
+println("Marginal SR Completed!...Press any key to continue...")
+readline()
 
 #region Conditional SR calls
 conditional_halls_of_fame_per_slice = Vector{Any}(undef, cfg_data["num_conditional_slices"])
@@ -132,8 +132,8 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
 end
 #endregion
 
-# println("Conditional SR Completed!...Press any key to continue...")
-# readline()
+println("Conditional SR Completed!...Press any key to continue...")
+readline()
 
 #region Joint SR call
 
@@ -174,7 +174,7 @@ for (d, slice) in d_slice_permutations
        joint_pop_members_per_dim_and_slice = multiply_conditionals_with_marginals(joint_pop_members_per_dim_and_slice, marginal_halls_of_fame[fixed_variable].members)
        if cfg_sr["joint_max_num_expressions_per_dim_and_slice"]!= Inf
             shuffle!(joint_pop_members_per_dim_and_slice)    
-            joint_pop_members_per_dim_and_slice = sample(joint_pop_members_per_dim_and_slice, cfg_sr["joint_max_num_expressions_per_dim_and_slice"]; replace=false)
+            joint_pop_members_per_dim_and_slice = sample(joint_pop_members_per_dim_and_slice, min(length(joint_pop_members_per_dim_and_slice), cfg_sr["joint_max_num_expressions_per_dim_and_slice"]); replace=false)
        end
     end
     append!(joint_initial_population, joint_pop_members_per_dim_and_slice)
@@ -182,7 +182,7 @@ end
 
 shuffle!(joint_initial_population)
 if cfg_sr["joint_max_num_expressions"] != Inf
-    joint_initial_population = sample(joint_initial_population, cfg_sr["joint_max_num_expressions"]; replace=false)
+    joint_initial_population = sample(joint_initial_population, min(length(joint_initial_population), cfg_sr["joint_max_num_expressions"]); replace=false)
 end
 
 populations = [joint_initial_population[i:i+(cfg_sr["population_size_for_joint_sr"]-1)] for i in 1:cfg_sr["population_size_for_joint_sr"]:(cfg_sr["num_populations_for_joint_sr"]*cfg_sr["population_size_for_joint_sr"])]
@@ -191,11 +191,11 @@ joint_options = SymbolicRegression.Options(;
     binary_operators=cfg_sr["binary_operators"], unary_operators=cfg_sr["unary_operators"], populations = cfg_sr["num_populations_for_joint_sr"], population_size = cfg_sr["population_size_for_joint_sr"]
     )
 
-# println("Starting joint SR call...Press any key to continue...")
-# readline()
+println("Starting joint SR call...Press any key to continue...")
+readline()
 
 joint_hall_of_fame = equation_search(
-        reshape(joint_data_x, cfg_data["num_dimensions"], :), joint_data_y; options=joint_options, parallelism=:serial, initial_populations=populations, niterations=cfg_sr["niterations_for_joint_sr"]
+        reshape(joint_data_x, cfg_data["num_dimensions"], :), joint_data_y; options=joint_options, parallelism=cfg_sr["parallelism_for_joint_sr"], initial_populations=populations, niterations=cfg_sr["niterations_for_joint_sr"]
 )
 #endregion
 
