@@ -1,24 +1,26 @@
 using Pkg
 Pkg.activate(".")
 using SymbolicRegression
-
-
-# function ensure_package(pkg::String)
-#    if !(pkg in keys(Pkg.installed()))
-#        Pkg.add(pkg)
-#    end
-#end
-#for pkg in ["CSV", "DataFrames", "Random", "Plots"]
-#    ensure_package(pkg)
-#end
 using CSV
 using DataFrames
 using Random
 using Plots
-include("config.jl")
+using LoggingExtras
+using TensorBoardLogger
+using Dates
 using Base.Threads
-gr()
+using FilePathsBase
+
+timestamp = Dates.format(now(), "yyyymmdd_HHMMSS")
+log_dir = "logs/log_$timestamp"
+if !isdir(log_dir)
+    mkpath(log_dir)
+end
+
+include("config.jl")
 cfg=CONFIG
+
+gr()
 
 function update_feature!(node::Node, source_feature::Int, target_feature::Int)
     # Only update leaf (degree==0) feature nodes (non-constant)
@@ -35,6 +37,11 @@ function update_feature!(node::Node, source_feature::Int, target_feature::Int)
         end
     end
     return node
+end
+
+with_logger(FileLogger(joinpath(log_dir, "meta.txt"))) do
+    cfg_symbolized = Dict(Symbol(k) => v for (k, v) in cfg)
+    @info("Basic Information", thread_num=Threads.nthreads(), cfg_symbolized...)
 end
 
 df_m = [CSV.read("./data/marginal_data_$(i).csv", DataFrame; header=false) for i in 0:1]
@@ -72,8 +79,8 @@ joint_data_y = vcat(
 )
 
 
-m_x1_p = plot(m_x[1], m_y[1], seriestype=:scatter, title="Scatter plot of data x0", xlabel="X-axis", ylabel="Y-axis")
-m_x2_p = plot(m_x[2], m_y[2], seriestype=:scatter, title="Scatter plot of data x1", xlabel="X-axis", ylabel="Y-axis")
+# m_x1_p = plot(m_x[1], m_y[1], seriestype=:scatter, title="Scatter plot of data x0", xlabel="X-axis", ylabel="Y-axis")
+# m_x2_p = plot(m_x[2], m_y[2], seriestype=:scatter, title="Scatter plot of data x1", xlabel="X-axis", ylabel="Y-axis")
 # display(m_x1_p)
 # display(m_x2_p)
 
@@ -83,11 +90,18 @@ options = SymbolicRegression.Options(;
 )
 
 hall_of_fame_m_x1 = equation_search(
-        reshape(m_x[1], 1, :), m_y[1]; options=options, parallelism=cfg["parallelism_for_marginal_sr"], niterations=cfg["niterations_for_marginal_sr"]
+        reshape(m_x[1], 1, :), m_y[1]; 
+        options=options, 
+        parallelism=cfg["parallelism_for_marginal_sr"], 
+        niterations=cfg["niterations_for_marginal_sr"],
+        logger=SRLogger(FileLogger(joinpath(log_dir, "marginal_x1.txt")), log_interval=2)
     )
 
 hall_of_fame_m_x2 = equation_search(
-        reshape(m_x[2], 1, :), m_y[2]; options=options, parallelism=cfg["parallelism_for_marginal_sr"], niterations=cfg["niterations_for_marginal_sr"]
+        reshape(m_x[2], 1, :), m_y[2]; 
+        options=options, parallelism=cfg["parallelism_for_marginal_sr"], 
+        niterations=cfg["niterations_for_marginal_sr"],
+        logger=SRLogger(FileLogger(joinpath(log_dir, "marginal_x2.txt")), log_interval=2)
     )
 
 dominating_m_x1 = calculate_pareto_frontier(hall_of_fame_m_x1)
@@ -110,7 +124,13 @@ trees_c_x1 = Vector{Any}(undef, n1)
     x = reshape(conditional_data_x1[i][1], 1, :)
     y = conditional_data_y1[i][1]
 
-    hall_of_fame = equation_search(x, y; options=options, parallelism=cfg["parallelism_for_conditional_sr"], niterations=cfg["niterations_for_conditional_sr"])
+    hall_of_fame = equation_search(
+        x, y; 
+        options=options, 
+        parallelism=cfg["parallelism_for_conditional_sr"], 
+        niterations=cfg["niterations_for_conditional_sr"],
+        logger=SRLogger(FileLogger(joinpath(log_dir, "conditional_x1_slice$i.txt")), log_interval=2)
+    )
     conditional_hall_of_fame_x1[i] = hall_of_fame
 
     pareto = calculate_pareto_frontier(hall_of_fame)
@@ -128,7 +148,13 @@ trees_c_x2 = Vector{Any}(undef, n2)
     x = reshape(conditional_data_x2[i][1], 1, :)
     y = conditional_data_y2[i][1]
 
-    hall_of_fame = equation_search(x, y; options=options, parallelism=cfg["parallelism_for_conditional_sr"], niterations=cfg["niterations_for_conditional_sr"])
+    hall_of_fame = equation_search(
+        x, y; 
+        options=options, 
+        parallelism=cfg["parallelism_for_conditional_sr"], 
+        niterations=cfg["niterations_for_conditional_sr"],
+        logger=SRLogger(FileLogger(joinpath(log_dir, "conditional_x2_slice$i.txt")), log_interval=2)
+    )
     conditional_hall_of_fame_x2[i] = hall_of_fame
 
     pareto = calculate_pareto_frontier(hall_of_fame)
@@ -174,7 +200,13 @@ options1 = SymbolicRegression.Options(;
 # readline()
 
 hof = equation_search(
-        reshape(joint_data_x, 2, :), joint_data_y; options=options1, parallelism=:serial, initial_populations=populations, niterations=cfg["niterations_for_joint_sr"]
+        reshape(joint_data_x, 2, :), 
+        joint_data_y; 
+        options=options1, 
+        parallelism=:serial, 
+        initial_populations=populations, 
+        niterations=cfg["niterations_for_joint_sr"],
+        logger=SRLogger(FileLogger(joinpath(log_dir, "final.txt")), log_interval=2)
 )
 
 
