@@ -5,6 +5,7 @@ using CSV
 using DataFrames
 using Random
 using Plots
+using Base.Threads
 gr()
 
 function update_feature!(node::Node)
@@ -96,29 +97,44 @@ for i in eachindex(hall_of_fame_m_x2.members)
     update_feature!(hall_of_fame_m_x2.members[i].tree.tree)
 end
 
-conditional_hall_of_fame_x1 =[]
-dominating_c_x1 = []
-trees_c_x1 = []
-for i in eachindex(conditional_data_x1)
-    append!(conditional_hall_of_fame_x1, [equation_search(
-        reshape(conditional_data_x1[i][1], 1, :), conditional_data_y1[i][1]; options=options, parallelism=:serial, niterations=10
-    )])
-    append!(dominating_c_x1, [calculate_pareto_frontier(conditional_hall_of_fame_x1[i])])
-    append!(trees_c_x1, [member.tree for member in dominating_c_x1[i]])
+n1 = length(conditional_data_x1)
+conditional_hall_of_fame_x1 = Vector{Any}(undef, n1)
+dominating_c_x1 = Vector{Any}(undef, n1)
+trees_c_x1 = Vector{Any}(undef, n1)
+
+@threads for i in 1:n1
+    x = reshape(conditional_data_x1[i][1], 1, :)
+    y = conditional_data_y1[i][1]
+
+    hall_of_fame = equation_search(x, y; options=options, parallelism=:serial, niterations=10)
+    conditional_hall_of_fame_x1[i] = hall_of_fame
+
+    pareto = calculate_pareto_frontier(hall_of_fame)
+    dominating_c_x1[i] = pareto
+
+    trees_c_x1[i] = [member.tree for member in pareto]
 end
 
-conditional_hall_of_fame_x2 =[]
-dominating_c_x2 = []
-trees_c_x2 = []
-for i in eachindex(conditional_data_x2)
-    append!(conditional_hall_of_fame_x2, [equation_search(
-        reshape(conditional_data_x2[i][1], 1, :), conditional_data_y2[i][1]; options=options, parallelism=:serial, niterations=10
-    )])
-    append!(dominating_c_x2, [calculate_pareto_frontier(conditional_hall_of_fame_x2[i])])
-    append!(trees_c_x2, [[member.tree for member in conditional_hall_of_fame_x2[i].members]])
-    for j in eachindex(trees_c_x2[i])
-        update_feature!(trees_c_x2[i][j].tree)
+n2 = length(conditional_data_x2)
+conditional_hall_of_fame_x2 = Vector{Any}(undef, n2)
+dominating_c_x2 = Vector{Any}(undef, n2)
+trees_c_x2 = Vector{Any}(undef, n2)
+
+@threads for i in 1:n2
+    x = reshape(conditional_data_x2[i][1], 1, :)
+    y = conditional_data_y2[i][1]
+
+    hall_of_fame = equation_search(x, y; options=options, parallelism=:serial, niterations=10)
+    conditional_hall_of_fame_x2[i] = hall_of_fame
+
+    pareto = calculate_pareto_frontier(hall_of_fame)
+    dominating_c_x2[i] = pareto
+
+    trees = [member.tree for member in hall_of_fame.members]
+    for tree in trees
+        update_feature!(tree.tree)
     end
+    trees_c_x2[i] = trees
 end
 
 joint_initial_population = []
@@ -141,8 +157,8 @@ for i in eachindex(conditional_hall_of_fame_x2)
 end
 
 shuffle(joint_initial_population)
-println("Press any key to continue...")
-readline()
+# println("Press any key to continue...")
+# readline()
 
 populations = [joint_initial_population[i:i+29] for i in 1:30:480]
 
@@ -150,8 +166,8 @@ options1 = SymbolicRegression.Options(;
     binary_operators=[+, *, /, -], unary_operators=[exp, pow2, pow3, pow4, pow5], populations = length(populations), population_size = length(populations[1])
     )
 
-println("Press any key to continue...at end")
-readline()
+# println("Press any key to continue...at end")
+# readline()
 
 hof = equation_search(
         reshape(joint_data_x, 2, :), joint_data_y; options=options1, parallelism=:serial, initial_populations=populations
