@@ -15,7 +15,14 @@ using Serialization
 # using Plots
 # gr()
 cfg_data=CONFIG_data
+cfg_log=CONFIG_log
 cfg_sr=CONFIG_sr
+
+timestamp = Dates.format(now(), "yyyymmdd_HHMMSS")
+log_dir = "logs/" * cfg_log["log_folder_prefix"] * "_log_$timestamp"
+if !isdir(log_dir)
+    mkpath(log_dir)
+end
 
 #endregion
 
