@@ -169,5 +169,5 @@ weights = [ones(size(x))*pdf(marginal_y, x_slices[1]); ones(size(x))*pdf(margina
 #endregion custom Dataset and Loss
 
 
-# Manipulate expression in Julia sing the object (We need to multiply conditional and marginal expressions)
+# Manipulate expression in Julia using the object (We need to multiply conditional and marginal expressions)
 # Initialize the population

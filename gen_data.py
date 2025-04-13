@@ -3,6 +3,7 @@ from sklearn.neighbors import KernelDensity
 import scipy
 import pandas as pd
 from tqdm import tqdm
+from config_management.data_config_muon_decay import DataConfig
 
 def kde1D(x, bandwidth, xbins=100j, **kwargs):
     """Build 1D kernel density estimate (KDE)."""
@@ -12,40 +13,33 @@ def kde1D(x, bandwidth, xbins=100j, **kwargs):
     density = np.exp(kde_skl.score_samples(X.reshape(-1, 1)))
     return X, density
 
-def read_file():
+def read_file(file_path, columns):
     print("reading file...")
-    file_path = 'MuonDecay.csv'
     df = pd.read_csv(file_path)
-    columns = ['m12^2', 'm13^2']
     samples = df[columns].to_numpy()
     return samples
 
-def generate_marginals(samples):
+def generate_marginals(samples, num_var, save_prefix, b_adj=1e-2):
     print("generating marginals...")
-    # marginal_data_[0-1].csv
-    b_adj = 1e-2
-    for vid in tqdm([0, 1]):
-        file_name = f"marginal_data_{vid}.csv"
+    for vid in tqdm(range(num_var)):
+        file_name = f"./data/processed_data/{save_prefix}_marginal_data_{vid}.csv"
         bw = b_adj * scipy.stats.gaussian_kde(samples[:, vid]).scotts_factor()
         X, density = kde1D(samples[:, vid], bw)
         data = np.hstack([X.reshape(-1, 1), density.reshape(-1, 1)])
         np.savetxt(file_name, data, delimiter=",")
 
 
-def generate_conditionals(samples):
+def generate_conditionals(samples, save_prefix, K = 'gaussian', slice_num=8, b_adj=1e-2):
     # conditional_data_[0-1]_slice_[0-7].csv
     # conditional_slices_[0-1].csv
     print("generating conditionals...")
-    b_adj = 1e-2
-    K = 'gaussian'
-    slice_num = 8
 
     bw = b_adj * scipy.stats.gaussian_kde(samples[:, 0]).scotts_factor()
     kde_all = KernelDensity(bandwidth=bw, kernel=K)
     kde_all.fit(samples)
-    for vid in tqdm([0, 1]):
+    var_num = samples.shape[1]
+    for vid in tqdm(range(var_num)):
         kde_x_other = KernelDensity(bandwidth=bw, kernel=K)
-        var_num = samples.shape[1]
         data = np.zeros((samples.shape[0], var_num - 1))
         for i in range(var_num - 1):
             data[:, i] = samples[:, i + (i >= vid)]
@@ -62,18 +56,20 @@ def generate_conditionals(samples):
             prob = np.exp(kde_all.score_samples(x_all)) # We use kde_all to score the slice of joint distribution corresponding to (x1, x2, x3)
             normalize_coe = len(x_all) / np.sum(prob) / (np.max(x_vid) - np.min(x_vid)) # This is the normalizing coefficient (area under the curve of the slice)
             prob *= normalize_coe
-            file_name = f"conditional_data_{vid}_slice_{snum}.csv"
+            file_name = f"./data/processed_data/{save_prefix}_conditional_data_{vid}_slice_{snum}.csv"
             data = np.hstack([x_vid.reshape(-1, 1), prob.reshape(-1, 1)])
             np.savetxt(file_name, data, delimiter=",")
-        file_name = f"conditional_slices_{vid}.csv"
+        file_name = f"./data/processed_data/{save_prefix}_conditional_slices_{vid}.csv"
         data = np.hstack([x_other_sample.reshape(-1, 1), x_other_prob.reshape(-1, 1)])
         np.savetxt(file_name, data, delimiter=",")
 
 
 def main():
-    samples = read_file()
-    generate_marginals(samples)
-    generate_conditionals(samples)
+    samples = read_file(DataConfig.data_file_path, DataConfig.columns)
+    num_var = len(DataConfig.columns)
+    generate_marginals(samples, num_var, save_prefix = DataConfig.processed_data_prefix, b_adj=DataConfig.b_adj)
+    generate_conditionals(samples, save_prefix = DataConfig.processed_data_prefix, K=DataConfig.K, slice_num=DataConfig.slice_num, b_adj=DataConfig.b_adj)
+    print("done!")
 
 if __name__ == "__main__":
     main()
