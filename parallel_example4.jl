@@ -1,26 +1,22 @@
-#region Imports
-@everywhere using Distributed
+using Distributed
 @everywhere using Pkg
 @everywhere Pkg.activate(".")
+@everywhere using DistributedArrays
 @everywhere using SymbolicRegression
 @everywhere using CSV
 @everywhere using DataFrames
 @everywhere using Random
 @everywhere using StatsBase
 @everywhere using IterTools
-@everywhere using Base.Threads
-@everywhere using LoggingExtras
 @everywhere using Dates
 @everywhere using FilePathsBase
 @everywhere using Serialization
 include("./config_management/muon_decay_config.jl")
-# using Plots
-# gr()
 cfg_data=CONFIG_data
 cfg_log=CONFIG_log
 cfg_sr=CONFIG_sr
 
-function format_hms(delta::Period)
+@everywhere function format_hms(delta::Period)
     total_seconds = Millisecond(delta).value ÷ 1000
     hours = total_seconds ÷ 3600
     minutes = (total_seconds % 3600) ÷ 60
@@ -37,16 +33,7 @@ log_dir = "logs/" * cfg_log["log_folder_prefix"] * "_log_$timestamp"
 if !isdir(log_dir)
     mkpath(log_dir)
 end
-
-with_logger(FileLogger(joinpath(log_dir, "meta_data.log"))) do
-    cfg_symbolized = Dict(Symbol(k) => v for (k, v) in cfg_sr)
-    @info("Basic Information", thread_num=Threads.nthreads(), cfg_symbolized...)
-end
-
 #endregion
-
-# println("Imports Completed!...Press any key to continue...")
-# readline()
 
 
 #region Load the data
@@ -71,12 +58,9 @@ joint_data_x = vcat([vcat([hcat(x, repeat(info', length(x))) for (x, info) in zi
 joint_data_y = vcat([vcat([y*info for (y, info) in zip(c_yd[1], c_yd_slice_info[1])]...) for d in 1:cfg_data["num_dimensions"]]...)
 #endregion
 
-# println("Data Loaded!...Press any key to continue...")
-# readline()
-
 
 #region Helper function to update the feature of a node in the tree
-function update_feature!(node::Node, source_feature::Int, target_feature::Int)
+@everywhere function update_feature!(node::Node, source_feature::Int, target_feature::Int)
     # Only update leaf (degree==0) feature nodes (non-constant)
     if node.degree == 0 && !node.constant
         if node.feature == source_feature
@@ -103,90 +87,85 @@ options = SymbolicRegression.Options(;
 
 
 #region Marginal SR calls
+dist_marginals = distribute(zeros(cfg_data["num_dimensions"]))
+
 marginal_halls_of_fame = Vector{Any}(undef, cfg_data["num_dimensions"])
+marginal_halls_of_fame = distribute(marginal_halls_of_fame, dist_marginals)
+
 dominating_pareto_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
+dominating_pareto_marginals = distribute(dominating_pareto_marginals, dist_marginals)
+
 trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
-@threads for d in 1:cfg_data["num_dimensions"]
+trees_marginals = distribute(trees_marginals, dist_marginals)
 
-    #region marginal_log
-    with_logger(FileLogger(joinpath(log_dir, "marginal$(d).log"))) do
-        start_time = now()
-        hall_of_fame = equation_search(
-            reshape(m_xd[d], 1, :), m_yd[d]; 
-            options=options, 
-            parallelism=cfg_sr["parallelism_for_marginal_sr"], 
-            niterations=cfg_sr["niterations_for_marginal_sr"],
-            logger=SRLogger(current_logger(), log_interval=cfg_log["log_interval"])
-        )
-        end_time = now()
-        duration = format_hms(end_time - start_time)
-        start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
-        end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
-        @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
 
-        pareto = calculate_pareto_frontier(hall_of_fame)
-        trees = [member.tree for member in pareto]
+@sync @distributed for d in 1:cfg_data["num_dimensions"]
+    hall_of_fame = equation_search(
+        reshape(m_xd[d], 1, :), m_yd[d]; 
+        options=options, 
+        parallelism=cfg_sr["parallelism_for_marginal_sr"], 
+        niterations=cfg_sr["niterations_for_marginal_sr"],
+    )
 
-        for member in eachindex(hall_of_fame.members)
-            update_feature!(hall_of_fame.members[member].tree.tree, 1, d)
-        end
-        
-        marginal_halls_of_fame[d] = hall_of_fame
-        dominating_pareto_marginals[d] = pareto
-        trees_marginals[d] = trees
+    pareto = calculate_pareto_frontier(hall_of_fame)
+    trees = [member.tree for member in pareto]
+
+    for member in eachindex(hall_of_fame.members)
+        update_feature!(hall_of_fame.members[member].tree.tree, 1, d)
     end
-end
-#endregion
+        
+    local_hof = localpart(marginal_halls_of_fame)
+    local_pareto = localpart(dominating_pareto_marginals)
+    local_trees = localpart(trees_marginals)
 
-# println("Marginal SR Completed!...Press any key to continue...")
-# readline()
+    local_hof = hall_of_fame
+    local_pareto = pareto
+    local_trees = trees
+end
+println("Done")
+#endregion
 
 
 #region Conditional SR calls
-conditional_halls_of_fame_per_slice = Vector{Any}(undef, cfg_data["num_conditional_slices"])
-conditional_halls_of_fame = [conditional_halls_of_fame_per_slice for i in 1:cfg_data["num_dimensions"]] # is this the cause of the threading pause until "enter" issue?
-dominating_pareto_conditionals_per_slice = Vector{Any}(undef, cfg_data["num_conditional_slices"])
-dominating_pareto_conditionals = [dominating_pareto_conditionals_per_slice for i in 1:cfg_data["num_dimensions"]]
-trees_conditionals_per_slice = Vector{Any}(undef, cfg_data["num_conditional_slices"])
-trees_conditionals = [trees_conditionals_per_slice for i in 1:cfg_data["num_dimensions"]]
-
 d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for slice in 1:cfg_data["num_conditional_slices"]]
+dist_conditionals = distribute(zeros(length(d_slice_permutations)))
 
-@threads for (d, slice) in d_slice_permutations
+conditional_halls_of_fame = Vector{Any}(undef, cfg_data["num_conditional_slices"] * cfg_data["num_dimensions"])
+conditional_halls_of_fame = distribute(conditional_halls_of_fame, dist_conditionals)      
+
+dominating_pareto_conditionals = Vector{Any}(undef, cfg_data["num_conditional_slices"] * cfg_data["num_dimensions"])
+dominating_pareto_conditionals = distribute(conditional_halls_of_fame, dist_conditionals)
+
+trees_conditionals = Vector{Any}(undef, cfg_data["num_conditional_slices"] * cfg_data["num_dimensions"])
+trees_conditionals = distribute(trees_conditionals, dist_conditionals)
+
+@sync @distributed for (d, slice) in d_slice_permutations
     x = reshape(c_xd[d][slice], 1, :)
     y = c_yd[d][slice]
 
-    with_logger(FileLogger(joinpath(log_dir, "conditional_$(d)_$(slice).log"))) do
-        start_time = now()
-        hall_of_fame = equation_search(
-            x, y; 
-            options=options, 
-            parallelism=cfg_sr["parallelism_for_conditional_sr"], 
-            niterations=cfg_sr["niterations_for_conditional_sr"],
-            logger=SRLogger(current_logger(), log_interval=cfg_log["log_interval"])
-        )
-        end_time = now()
-        duration = format_hms(end_time - start_time)
-        start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
-        end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
-        @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
+    hall_of_fame = equation_search(
+        x, y; 
+        options=options, 
+        parallelism=cfg_sr["parallelism_for_conditional_sr"], 
+        niterations=cfg_sr["niterations_for_conditional_sr"],
+    )
 
-        pareto = calculate_pareto_frontier(hall_of_fame)
-        trees = [member.tree for member in pareto]
+    pareto = calculate_pareto_frontier(hall_of_fame)
+    trees = [member.tree for member in pareto]
 
-        for member in eachindex(hall_of_fame.members)
-            update_feature!(hall_of_fame.members[member].tree.tree, 1, d)
-        end
-
-        conditional_halls_of_fame[d][slice] = hall_of_fame
-        dominating_pareto_conditionals[d][slice] = pareto
-        trees_conditionals[d][slice] = trees
+    for member in eachindex(hall_of_fame.members)
+        update_feature!(hall_of_fame.members[member].tree.tree, 1, d)
     end
+
+    local_hof = localpart(conditional_halls_of_fame)
+    local_pareto = localpart(dominating_pareto_conditionals)
+    local_trees = localpart(trees_conditionals)
+
+    local_hof = hall_of_fame
+    local_pareto = pareto
+    local_trees = trees
 end
 #endregion
-
-# println("Conditional SR Completed!...Press any key to continue...")
-# readline()
 
 #region Joint SR call
 
@@ -219,7 +198,10 @@ end
 
 joint_initial_population = []
 dimensions = 1:cfg_data["num_dimensions"]
-for (d, slice) in d_slice_permutations
+d_slice_permutations = collect(d_slice_permutations)
+conditional_halls_of_fame = collect(conditional_halls_of_fame)
+marginal_halls_of_fame = collect(marginal_halls_of_fame)
+for (d, slice) in collect(d_slice_permutations)
     fixed_variables = filter(x -> x !=d, dimensions)
     joint_pop_members_per_dim_and_slice = deepcopy(conditional_halls_of_fame[d][slice].members)
     # This assumes that the marginals are all independent
@@ -244,27 +226,15 @@ joint_options = SymbolicRegression.Options(;
     binary_operators=cfg_sr["binary_operators"], unary_operators=cfg_sr["unary_operators"], populations = cfg_sr["num_populations_for_joint_sr"], population_size = cfg_sr["population_size_for_joint_sr"]
     )
 
-# println("Starting joint SR call...Press any key to continue...")
-# readline()
 
-with_logger(FileLogger(joinpath(log_dir, "joint.log"))) do
-    global joint_hall_of_fame
-    start_time = now()
-    joint_hall_of_fame = equation_search(
-            reshape(joint_data_x, cfg_data["num_dimensions"], :), 
-            joint_data_y; 
-            options=joint_options,
-            parallelism=cfg_sr["parallelism_for_joint_sr"], 
-            initial_populations=populations, 
-            niterations=cfg_sr["niterations_for_joint_sr"], 
-            logger=SRLogger(current_logger(), log_interval=cfg_log["log_interval"])
-    )
-    end_time = now()
-    duration = format_hms(end_time - start_time)
-    start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
-    end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
-    @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
-end
+joint_hall_of_fame = equation_search(
+        reshape(joint_data_x, cfg_data["num_dimensions"], :), 
+        joint_data_y; 
+        options=joint_options,
+        parallelism=cfg_sr["parallelism_for_joint_sr"], 
+        initial_populations=populations, 
+        niterations=cfg_sr["niterations_for_joint_sr"], 
+)
 #endregion
 
 # Save the joint hall of fame
