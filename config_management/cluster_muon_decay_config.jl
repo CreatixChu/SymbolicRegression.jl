@@ -16,7 +16,7 @@ const CONFIG_data = Dict(
 )
 
 const CONFIG_log = Dict(
-    "log_folder_prefix" => "local",
+    "log_folder_prefix" => "cluster",
     "log_interval" => 1,
 )
 

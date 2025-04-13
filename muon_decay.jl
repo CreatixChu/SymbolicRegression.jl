@@ -12,13 +12,15 @@ using Base.Threads
 using LoggingExtras
 using Dates
 using FilePathsBase
+using Serialization
 # using Plots
 # gr()
 cfg_data=CONFIG_data
+cfg_log=CONFIG_log
 cfg_sr=CONFIG_sr
 
 timestamp = Dates.format(now(), "yyyymmdd_HHMMSS")
-log_dir = "logs/log_$timestamp"
+log_dir = "logs/" * cfg_log["log_folder_prefix"] * "_log_$timestamp"
 if !isdir(log_dir)
     mkpath(log_dir)
 end
@@ -99,7 +101,7 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
             options=options, 
             parallelism=cfg_sr["parallelism_for_marginal_sr"], 
             niterations=cfg_sr["niterations_for_marginal_sr"],
-            logger=SRLogger(current_logger(), log_interval=10)
+            logger=SRLogger(current_logger(), log_interval=cfg_log["log_interval"])
         )
 
         pareto = calculate_pareto_frontier(hall_of_fame)
@@ -140,7 +142,7 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
             options=options, 
             parallelism=cfg_sr["parallelism_for_conditional_sr"], 
             niterations=cfg_sr["niterations_for_conditional_sr"],
-            logger=SRLogger(current_logger(), log_interval=10)
+            logger=SRLogger(current_logger(), log_interval=cfg_log["log_interval"])
         )
         pareto = calculate_pareto_frontier(hall_of_fame)
         trees = [member.tree for member in pareto]
@@ -219,6 +221,7 @@ println("Starting joint SR call...Press any key to continue...")
 readline()
 
 with_logger(FileLogger(joinpath(log_dir, "joint.log"))) do
+    global joint_hall_of_fame
     joint_hall_of_fame = equation_search(
             reshape(joint_data_x, cfg_data["num_dimensions"], :), 
             joint_data_y; 
@@ -226,9 +229,17 @@ with_logger(FileLogger(joinpath(log_dir, "joint.log"))) do
             parallelism=cfg_sr["parallelism_for_joint_sr"], 
             initial_populations=populations, 
             niterations=cfg_sr["niterations_for_joint_sr"], 
-            logger=SRLogger(current_logger(), log_interval=10)
+            logger=SRLogger(current_logger(), log_interval=cfg_log["log_interval"])
     )
 end
 #endregion
+
+# Save the joint hall of fame
+save_path = joinpath(log_dir, "joint_hall_of_fame.jls")
+open(save_path, "w") do io
+    serialize(io, joint_hall_of_fame) # to load the data again use deserialze
+end
+
+println("Joint Hall of Fame saved to $(save_path)")
 
 println("Joint SR Completed!")
