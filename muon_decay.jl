@@ -119,6 +119,8 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
         )
         end_time = now()
         duration = format_hms(end_time - start_time)
+        start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
+        end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
         @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
 
         pareto = calculate_pareto_frontier(hall_of_fame)
@@ -164,6 +166,8 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
         )
         end_time = now()
         duration = format_hms(end_time - start_time)
+        start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
+        end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
         @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
 
         pareto = calculate_pareto_frontier(hall_of_fame)
@@ -256,6 +260,8 @@ with_logger(FileLogger(joinpath(log_dir, "joint.log"))) do
     )
     end_time = now()
     duration = format_hms(end_time - start_time)
+    start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
+    end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
     @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
 end
 #endregion
