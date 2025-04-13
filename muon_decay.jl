@@ -9,30 +9,18 @@ using StatsBase
 using IterTools
 include("./config_management/muon_decay_config.jl")
 using Base.Threads
-using LoggingExtras
 using Dates
 using FilePathsBase
 using Serialization
 # using Plots
 # gr()
 cfg_data=CONFIG_data
-cfg_log=CONFIG_log
 cfg_sr=CONFIG_sr
 
-timestamp = Dates.format(now(), "yyyymmdd_HHMMSS")
-log_dir = "logs/" * cfg_log["log_folder_prefix"] * "_log_$timestamp"
-if !isdir(log_dir)
-    mkpath(log_dir)
-end
-
-with_logger(FileLogger(joinpath(log_dir, "meta_data.log"))) do
-    cfg_symbolized = Dict(Symbol(k) => v for (k, v) in cfg_sr)
-    @info("Basic Information", thread_num=Threads.nthreads(), cfg_symbolized...)
-end
 #endregion
 
-println("Imports Completed!...Press any key to continue...")
-readline()
+# println("Imports Completed!...Press any key to continue...")
+# readline()
 
 
 #region Load the data
@@ -57,8 +45,8 @@ joint_data_x = vcat([vcat([hcat(x, repeat(info', length(x))) for (x, info) in zi
 joint_data_y = vcat([vcat([y*info for (y, info) in zip(c_yd[1], c_yd_slice_info[1])]...) for d in 1:cfg_data["num_dimensions"]]...)
 #endregion
 
-println("Data Loaded!...Press any key to continue...")
-readline()
+# println("Data Loaded!...Press any key to continue...")
+# readline()
 
 
 #region Helper function to update the feature of a node in the tree
@@ -95,13 +83,11 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
 @threads for d in 1:cfg_data["num_dimensions"]
 
     #region marginal_log
-    with_logger(FileLogger(joinpath(log_dir, "marginal$(d).log"))) do
         hall_of_fame = equation_search(
             reshape(m_xd[d], 1, :), m_yd[d]; 
             options=options, 
             parallelism=cfg_sr["parallelism_for_marginal_sr"], 
-            niterations=cfg_sr["niterations_for_marginal_sr"],
-            logger=SRLogger(current_logger(), log_interval=cfg_log["log_interval"])
+            niterations=cfg_sr["niterations_for_marginal_sr"]
         )
 
         pareto = calculate_pareto_frontier(hall_of_fame)
@@ -114,12 +100,11 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
         marginal_halls_of_fame[d] = hall_of_fame
         dominating_pareto_marginals[d] = pareto
         trees_marginals[d] = trees
-    end
 end
 #endregion
 
-println("Marginal SR Completed!...Press any key to continue...")
-readline()
+# println("Marginal SR Completed!...Press any key to continue...")
+# readline()
 
 
 #region Conditional SR calls
@@ -136,13 +121,11 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
     x = reshape(c_xd[d][slice], 1, :)
     y = c_yd[d][slice]
 
-    with_logger(FileLogger(joinpath(log_dir, "conditional_$(d)_$(slice).log"))) do
         hall_of_fame = equation_search(
             x, y; 
             options=options, 
             parallelism=cfg_sr["parallelism_for_conditional_sr"], 
             niterations=cfg_sr["niterations_for_conditional_sr"],
-            logger=SRLogger(current_logger(), log_interval=cfg_log["log_interval"])
         )
         pareto = calculate_pareto_frontier(hall_of_fame)
         trees = [member.tree for member in pareto]
@@ -154,12 +137,11 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
         conditional_halls_of_fame[d][slice] = hall_of_fame
         dominating_pareto_conditionals[d][slice] = pareto
         trees_conditionals[d][slice] = trees
-    end
 end
 #endregion
 
-println("Conditional SR Completed!...Press any key to continue...")
-readline()
+# println("Conditional SR Completed!...Press any key to continue...")
+# readline()
 
 #region Joint SR call
 
@@ -217,11 +199,9 @@ joint_options = SymbolicRegression.Options(;
     binary_operators=cfg_sr["binary_operators"], unary_operators=cfg_sr["unary_operators"], populations = cfg_sr["num_populations_for_joint_sr"], population_size = cfg_sr["population_size_for_joint_sr"]
     )
 
-println("Starting joint SR call...Press any key to continue...")
-readline()
+# println("Starting joint SR call...Press any key to continue...")
+# readline()
 
-with_logger(FileLogger(joinpath(log_dir, "joint.log"))) do
-    global joint_hall_of_fame
     joint_hall_of_fame = equation_search(
             reshape(joint_data_x, cfg_data["num_dimensions"], :), 
             joint_data_y; 
@@ -229,9 +209,7 @@ with_logger(FileLogger(joinpath(log_dir, "joint.log"))) do
             parallelism=cfg_sr["parallelism_for_joint_sr"], 
             initial_populations=populations, 
             niterations=cfg_sr["niterations_for_joint_sr"], 
-            logger=SRLogger(current_logger(), log_interval=cfg_log["log_interval"])
     )
-end
 #endregion
 
 # Save the joint hall of fame
