@@ -89,83 +89,83 @@ options = SymbolicRegression.Options(;
     binary_operators=cfg["binary_operators"], unary_operators=cfg["unary_operators"]
 )
 
-hall_of_fame_m_x1 = equation_search(
-        reshape(m_x[1], 1, :), m_y[1]; 
-        options=options, 
-        parallelism=cfg["parallelism_for_marginal_sr"], 
-        niterations=cfg["niterations_for_marginal_sr"],
-        logger=SRLogger(FileLogger(joinpath(log_dir, "marginal_x1.txt")), log_interval=2)
-    )
+jobs = []
+const hof_dict = Dict{Symbol, Any}()
+const dominating_dict = Dict{Symbol, Any}()
+const trees_dict = Dict{Symbol, Any}()
 
-hall_of_fame_m_x2 = equation_search(
-        reshape(m_x[2], 1, :), m_y[2]; 
-        options=options, parallelism=cfg["parallelism_for_marginal_sr"], 
-        niterations=cfg["niterations_for_marginal_sr"],
-        logger=SRLogger(FileLogger(joinpath(log_dir, "marginal_x2.txt")), log_interval=2)
-    )
-
-dominating_m_x1 = calculate_pareto_frontier(hall_of_fame_m_x1)
-trees_m_x1 = [member.tree for member in dominating_m_x1]
-
-dominating_m_x2 = calculate_pareto_frontier(hall_of_fame_m_x2)
-trees_m_x2 = [member.tree for member in dominating_m_x2]
-
-
-for i in eachindex(hall_of_fame_m_x2.members)
-    update_feature!(hall_of_fame_m_x2.members[i].tree.tree, 1, 2)
+@info "preparing marginal jobs"
+for i in 1:2
+    var_name = Symbol("marginal_x$i")
+    hof_dict[var_name] = nothing
+    dominating_dict[var_name] = nothing
+    trees_dict[var_name] = nothing
+    push!(jobs, () -> begin
+        @info "marginal$i start"
+        with_logger(FileLogger(joinpath(log_dir, "marginal_x$i.txt"))) do
+            hof_result = equation_search(
+                reshape(m_x[i], 1, :), m_y[i]; 
+                options=options,
+                parallelism=cfg["parallelism_for_marginal_sr"],
+                niterations=cfg["niterations_for_marginal_sr"],
+                logger=SRLogger(current_logger(), log_interval=10)
+            )
+            hof_dict[var_name] = hof_result
+            dominating_dict[var_name] = calculate_pareto_frontier(hof_result)
+            trees_dict[var_name] = [member.tree for member in dominating_dict[var_name]]
+            if i == 2
+                for tree in trees_dict[var_name]
+                    update_feature!(tree.tree, 1, 2)
+                end
+            end
+        end
+        @info "marginal$i finish"
+    end)
 end
 
-n1 = length(conditional_data_x1)
-conditional_hall_of_fame_x1 = Vector{Any}(undef, n1)
-dominating_c_x1 = Vector{Any}(undef, n1)
-trees_c_x1 = Vector{Any}(undef, n1)
+@info "preparing conditional jobs"
+for vid in 1:2
+    data_x = getfield(Main, Symbol("conditional_data_x$vid"))
+    data_y = getfield(Main, Symbol("conditional_data_y$vid"))
+    n = length(data_x)
 
-@threads for i in 1:n1
-    x = reshape(conditional_data_x1[i][1], 1, :)
-    y = conditional_data_y1[i][1]
-
-    hall_of_fame = equation_search(
-        x, y; 
-        options=options, 
-        parallelism=cfg["parallelism_for_conditional_sr"], 
-        niterations=cfg["niterations_for_conditional_sr"],
-        logger=SRLogger(FileLogger(joinpath(log_dir, "conditional_x1_slice$i.txt")), log_interval=2)
-    )
-    conditional_hall_of_fame_x1[i] = hall_of_fame
-
-    pareto = calculate_pareto_frontier(hall_of_fame)
-    dominating_c_x1[i] = pareto
-
-    trees_c_x1[i] = [member.tree for member in pareto]
-end
-
-n2 = length(conditional_data_x2)
-conditional_hall_of_fame_x2 = Vector{Any}(undef, n2)
-dominating_c_x2 = Vector{Any}(undef, n2)
-trees_c_x2 = Vector{Any}(undef, n2)
-
-@threads for i in 1:n2
-    x = reshape(conditional_data_x2[i][1], 1, :)
-    y = conditional_data_y2[i][1]
-
-    hall_of_fame = equation_search(
-        x, y; 
-        options=options, 
-        parallelism=cfg["parallelism_for_conditional_sr"], 
-        niterations=cfg["niterations_for_conditional_sr"],
-        logger=SRLogger(FileLogger(joinpath(log_dir, "conditional_x2_slice$i.txt")), log_interval=2)
-    )
-    conditional_hall_of_fame_x2[i] = hall_of_fame
-
-    pareto = calculate_pareto_frontier(hall_of_fame)
-    dominating_c_x2[i] = pareto
-
-    trees = [member.tree for member in hall_of_fame.members]
-    for tree in trees
-        update_feature!(tree.tree, 1, 2)
+    for i in 1:n
+        var_name = Symbol("conditional_x$(vid)_slice$i")
+        hof_dict[var_name] = nothing
+        dominating_dict[var_name] = nothing
+        trees_dict[var_name] = nothing
+        x = reshape(data_x[i][1], 1, :)
+        y = data_y[i][1]
+        push!(jobs, () -> begin
+            @info "conditional$vid-slice$i start"
+            with_logger(FileLogger(joinpath(log_dir, "conditional_x$(vid)_slice$i.txt"))) do
+                hof_dict[var_name] = equation_search(
+                    x, y; 
+                    options=options, 
+                    parallelism=cfg["parallelism_for_conditional_sr"], 
+                    niterations=cfg["niterations_for_conditional_sr"],
+                    logger=SRLogger(current_logger(), log_interval=10)
+                )
+                dominating_dict[var_name] = calculate_pareto_frontier(hof_dict[var_name])
+                trees_dict[var_name] = [member.tree for member in dominating_dict[var_name]]
+                if vid == 2
+                    for tree in trees_dict[var_name]
+                        update_feature!(tree.tree, 1, 2)
+                    end
+                end
+            end
+            @info "conditional$vid-slice$i finish"
+        end)
     end
-    trees_c_x2[i] = trees
 end
+
+@info "start multithreading execution" jobs_num=length(jobs)
+@threads for i in 1:length(jobs)
+    jobs[i]()
+end
+
+@info "finsh multithreading execution!"
+readline()
 
 joint_initial_population = []
 
@@ -178,17 +178,15 @@ function multiply_conditionals_with_marginals(conditional_pop_members, marginal_
 end
 
 
-for i in eachindex(conditional_hall_of_fame_x1)
-    append!(joint_initial_population, multiply_conditionals_with_marginals(conditional_hall_of_fame_x1[i].members, hall_of_fame_m_x2.members))
+for i in 1:8
+    append!(joint_initial_population, multiply_conditionals_with_marginals(hof_dict[Symbol("conditional_x1_slice$i")][i].members, hof_dict["marginal_x2"].members))
 end
 
-for i in eachindex(conditional_hall_of_fame_x2)
-    append!(joint_initial_population, multiply_conditionals_with_marginals(conditional_hall_of_fame_x2[i].members, hall_of_fame_m_x1.members))
+for i in 1:8
+    append!(joint_initial_population, multiply_conditionals_with_marginals(hof_dict[Symbol("conditional_x2_slice$i")][i].members, hof_dict["marginal_x1"].members))
 end
 
 shuffle(joint_initial_population)
-# println("Press any key to continue...")
-# readline()
 
 populations = [joint_initial_population[i:i+29] for i in 1:30:480]
 
@@ -199,15 +197,17 @@ options1 = SymbolicRegression.Options(;
 # println("Press any key to continue...at end")
 # readline()
 
-hof = equation_search(
+with_logger(FileLogger(joinpath(log_dir, "final.txt"))) do
+    hof = equation_search(
         reshape(joint_data_x, 2, :), 
         joint_data_y; 
         options=options1, 
         parallelism=:serial, 
         initial_populations=populations, 
         niterations=cfg["niterations_for_joint_sr"],
-        logger=SRLogger(FileLogger(joinpath(log_dir, "final.txt")), log_interval=2)
-)
+        logger=SRLogger(current_logger(), log_interval=10)
+    )
+end
 
 
 
