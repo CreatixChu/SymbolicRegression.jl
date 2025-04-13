@@ -1,18 +1,19 @@
 #region Imports
-using Pkg
-Pkg.activate(".")
-using SymbolicRegression
-using CSV
-using DataFrames
-using Random
-using StatsBase
-using IterTools
+using Distributed
+@everywhere using Pkg
+@everywhere Pkg.activate(".")
+@everywhere using SymbolicRegression
+@everywhere using CSV
+@everywhere using DataFrames
+@everywhere using Random
+@everywhere using StatsBase
+@everywhere using IterTools
+@everywhere using Base.Threads
+@everywhere using LoggingExtras
+@everywhere using Dates
+@everywhere using FilePathsBase
+@everywhere using Serialization
 include("./config_management/muon_decay_config.jl")
-using Base.Threads
-using LoggingExtras
-using Dates
-using FilePathsBase
-using Serialization
 # using Plots
 # gr()
 cfg_data=CONFIG_data
@@ -44,8 +45,8 @@ end
 
 #endregion
 
-println("Imports Completed!...Press any key to continue...")
-readline()
+# println("Imports Completed!...Press any key to continue...")
+# readline()
 
 
 #region Load the data
@@ -70,8 +71,8 @@ joint_data_x = vcat([vcat([hcat(x, repeat(info', length(x))) for (x, info) in zi
 joint_data_y = vcat([vcat([y*info for (y, info) in zip(c_yd[1], c_yd_slice_info[1])]...) for d in 1:cfg_data["num_dimensions"]]...)
 #endregion
 
-println("Data Loaded!...Press any key to continue...")
-readline()
+# println("Data Loaded!...Press any key to continue...")
+# readline()
 
 
 #region Helper function to update the feature of a node in the tree
@@ -119,6 +120,8 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
         )
         end_time = now()
         duration = format_hms(end_time - start_time)
+        start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
+        end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
         @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
 
         pareto = calculate_pareto_frontier(hall_of_fame)
@@ -135,8 +138,8 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
 end
 #endregion
 
-println("Marginal SR Completed!...Press any key to continue...")
-readline()
+# println("Marginal SR Completed!...Press any key to continue...")
+# readline()
 
 
 #region Conditional SR calls
@@ -164,6 +167,8 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
         )
         end_time = now()
         duration = format_hms(end_time - start_time)
+        start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
+        end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
         @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
 
         pareto = calculate_pareto_frontier(hall_of_fame)
@@ -180,8 +185,8 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
 end
 #endregion
 
-println("Conditional SR Completed!...Press any key to continue...")
-readline()
+# println("Conditional SR Completed!...Press any key to continue...")
+# readline()
 
 #region Joint SR call
 
@@ -239,8 +244,8 @@ joint_options = SymbolicRegression.Options(;
     binary_operators=cfg_sr["binary_operators"], unary_operators=cfg_sr["unary_operators"], populations = cfg_sr["num_populations_for_joint_sr"], population_size = cfg_sr["population_size_for_joint_sr"]
     )
 
-println("Starting joint SR call...Press any key to continue...")
-readline()
+# println("Starting joint SR call...Press any key to continue...")
+# readline()
 
 with_logger(FileLogger(joinpath(log_dir, "joint.log"))) do
     global joint_hall_of_fame
@@ -256,6 +261,8 @@ with_logger(FileLogger(joinpath(log_dir, "joint.log"))) do
     )
     end_time = now()
     duration = format_hms(end_time - start_time)
+    start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
+    end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
     @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
 end
 #endregion

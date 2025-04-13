@@ -20,12 +20,18 @@ const CONFIG_log = Dict(
     "log_interval" => 1,
 )
 
+parallelism = :multiprocessing
+num_procs = 1
+
 const CONFIG_sr = Dict(
     "binary_operators" => [+, -, *, /],
     "unary_operators" => [exp, log, pow2, pow3, pow4, pow5],
-    "parallelism_for_marginal_sr" => :multithreading,
-    "parallelism_for_conditional_sr" => :multithreading,
-    "parallelism_for_joint_sr" => :multithreading,
+    "parallelism_for_marginal_sr" => parallelism,
+    "parallelism_for_conditional_sr" => parallelism,
+    "parallelism_for_joint_sr" => parallelism,
+    "num_procs_for_marginal" => 1,
+    "num_procs_for_conditional" => 1,
+    "num_procs_for_joint" => 1,
     "niterations_for_marginal_sr" => 5,
     "niterations_for_conditional_sr" => 5,
     "niterations_for_joint_sr" => 5,
