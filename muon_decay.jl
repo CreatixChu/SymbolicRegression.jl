@@ -218,7 +218,7 @@ joint_options = SymbolicRegression.Options(;
 println("Starting joint SR call...Press any key to continue...")
 readline()
 
-with_logger(FileLogger(joinpath(log_dir, "final.txt"))) do
+with_logger(FileLogger(joinpath(log_dir, "joint.log"))) do
     joint_hall_of_fame = equation_search(
             reshape(joint_data_x, cfg_data["num_dimensions"], :), 
             joint_data_y; 
