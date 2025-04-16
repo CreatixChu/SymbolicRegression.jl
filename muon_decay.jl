@@ -44,8 +44,8 @@ end
 
 #endregion
 
-println("Imports Completed!...Press any key to continue...")
-readline()
+# println("Imports Completed!...Press any key to continue...")
+# readline()
 
 
 #region Load the data
@@ -70,8 +70,8 @@ joint_data_x = vcat([vcat([hcat(x, repeat(info', length(x))) for (x, info) in zi
 joint_data_y = vcat([vcat([y*info for (y, info) in zip(c_yd[1], c_yd_slice_info[1])]...) for d in 1:cfg_data["num_dimensions"]]...)
 #endregion
 
-println("Data Loaded!...Press any key to continue...")
-readline()
+# println("Data Loaded!...Press any key to continue...")
+# readline()
 
 
 #region Helper function to update the feature of a node in the tree
@@ -105,10 +105,12 @@ options = SymbolicRegression.Options(;
 marginal_halls_of_fame = Vector{Any}(undef, cfg_data["num_dimensions"])
 dominating_pareto_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
 trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
+loggers = [FileLogger(joinpath(log_dir, "marginal$(d).log")) for d in 1:cfg_data["num_dimensions"]]
+
 @threads for d in 1:cfg_data["num_dimensions"]
 
     #region marginal_log
-    with_logger(FileLogger(joinpath(log_dir, "marginal$(d).log"))) do
+    with_logger(loggers[d]) do
         start_time = now()
         hall_of_fame = equation_search(
             reshape(m_xd[d], 1, :), m_yd[d]; 
@@ -137,8 +139,8 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
 end
 #endregion
 
-println("Marginal SR Completed!...Press any key to continue...")
-readline()
+# println("Marginal SR Completed!...Press any key to continue...")
+# readline()
 
 
 #region Conditional SR calls
@@ -150,12 +152,18 @@ trees_conditionals_per_slice = Vector{Any}(undef, cfg_data["num_conditional_slic
 trees_conditionals = [trees_conditionals_per_slice for i in 1:cfg_data["num_dimensions"]]
 
 d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for slice in 1:cfg_data["num_conditional_slices"]]
+logger = Dict{Tuple{Int, Int}, AbstractLogger}()
+
+for (d, slice) in d_slice_permutations
+    log_path = joinpath(log_dir, "conditional_$(d)_$(slice).log")
+    logger[(d, slice)] = FileLogger(log_path)
+end
 
 @threads for (d, slice) in d_slice_permutations
     x = reshape(c_xd[d][slice], 1, :)
     y = c_yd[d][slice]
 
-    with_logger(FileLogger(joinpath(log_dir, "conditional_$(d)_$(slice).log"))) do
+    with_logger(logger[(d, slice)]) do
         start_time = now()
         hall_of_fame = equation_search(
             x, y; 
@@ -184,8 +192,8 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
 end
 #endregion
 
-println("Conditional SR Completed!...Press any key to continue...")
-readline()
+# println("Conditional SR Completed!...Press any key to continue...")
+# readline()
 
 #region Joint SR call
 
@@ -243,10 +251,11 @@ joint_options = SymbolicRegression.Options(;
     binary_operators=cfg_sr["binary_operators"], unary_operators=cfg_sr["unary_operators"], populations = cfg_sr["num_populations_for_joint_sr"], population_size = cfg_sr["population_size_for_joint_sr"]
     )
 
-println("Starting joint SR call...Press any key to continue...")
-readline()
+# println("Starting joint SR call...Press any key to continue...")
+# readline()
 
-with_logger(FileLogger(joinpath(log_dir, "joint.log"))) do
+logger = FileLogger(joinpath(log_dir, "joint.log"))
+with_logger(logger) do
     global joint_hall_of_fame
     start_time = now()
     joint_hall_of_fame = equation_search(

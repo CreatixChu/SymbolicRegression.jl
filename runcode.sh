@@ -7,4 +7,4 @@
 #SBATCH --output=logs/slurm-%j-%N.out               # the print of xxx.jl will be logged in this file, %N for node name, %j for job id:w
 
 module load StdEnv/2023 julia/1.11.3
-JULIA_NUM_THREADS=50 julia muon_decay.jl
+julia --thread=10 muon_decay.jl
