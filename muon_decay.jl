@@ -9,7 +9,6 @@ using StatsBase
 using IterTools
 include("./config_management/muon_decay_config.jl")
 using Base.Threads
-using LoggingExtras
 using Dates
 using FilePathsBase
 using Serialization
@@ -35,11 +34,6 @@ timestamp = Dates.format(now(), "yyyymmdd_HHMMSS")
 log_dir = "logs/" * cfg_log["log_folder_prefix"] * "_log_$timestamp"
 if !isdir(log_dir)
     mkpath(log_dir)
-end
-
-with_logger(FileLogger(joinpath(log_dir, "meta_data.log"))) do
-    cfg_symbolized = Dict(Symbol(k) => v for (k, v) in cfg_sr)
-    @info("Basic Information", thread_num=Threads.nthreads(), cfg_symbolized...)
 end
 
 #endregion
@@ -110,14 +104,11 @@ loggers = [FileLogger(joinpath(log_dir, "marginal$(d).log")) for d in 1:cfg_data
 @threads for d in 1:cfg_data["num_dimensions"]
 
     #region marginal_log
-    with_logger(loggers[d]) do
-        start_time = now()
         hall_of_fame = equation_search(
             reshape(m_xd[d], 1, :), m_yd[d]; 
             options=options, 
             parallelism=cfg_sr["parallelism_for_marginal_sr"], 
-            niterations=cfg_sr["niterations_for_marginal_sr"],
-            logger=SRLogger(current_logger(), log_interval=cfg_log["log_interval"])
+            niterations=cfg_sr["niterations_for_marginal_sr"]
         )
         end_time = now()
         duration = format_hms(end_time - start_time)
@@ -135,7 +126,6 @@ loggers = [FileLogger(joinpath(log_dir, "marginal$(d).log")) for d in 1:cfg_data
         marginal_halls_of_fame[d] = hall_of_fame
         dominating_pareto_marginals[d] = pareto
         trees_marginals[d] = trees
-    end
 end
 #endregion
 
@@ -163,14 +153,11 @@ end
     x = reshape(c_xd[d][slice], 1, :)
     y = c_yd[d][slice]
 
-    with_logger(logger[(d, slice)]) do
-        start_time = now()
         hall_of_fame = equation_search(
             x, y; 
             options=options, 
             parallelism=cfg_sr["parallelism_for_conditional_sr"], 
             niterations=cfg_sr["niterations_for_conditional_sr"],
-            logger=SRLogger(current_logger(), log_interval=cfg_log["log_interval"])
         )
         end_time = now()
         duration = format_hms(end_time - start_time)
@@ -188,7 +175,6 @@ end
         conditional_halls_of_fame[d][slice] = hall_of_fame
         dominating_pareto_conditionals[d][slice] = pareto
         trees_conditionals[d][slice] = trees
-    end
 end
 #endregion
 
@@ -254,10 +240,6 @@ joint_options = SymbolicRegression.Options(;
 # println("Starting joint SR call...Press any key to continue...")
 # readline()
 
-logger = FileLogger(joinpath(log_dir, "joint.log"))
-with_logger(logger) do
-    global joint_hall_of_fame
-    start_time = now()
     joint_hall_of_fame = equation_search(
             reshape(joint_data_x, cfg_data["num_dimensions"], :), 
             joint_data_y; 
@@ -265,14 +247,7 @@ with_logger(logger) do
             parallelism=cfg_sr["parallelism_for_joint_sr"], 
             initial_populations=populations, 
             niterations=cfg_sr["niterations_for_joint_sr"], 
-            logger=SRLogger(current_logger(), log_interval=cfg_log["log_interval"])
     )
-    end_time = now()
-    duration = format_hms(end_time - start_time)
-    start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
-    end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
-    @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
-end
 #endregion
 
 # Save the joint hall of fame
