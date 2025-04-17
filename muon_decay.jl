@@ -348,3 +348,16 @@ end
 println("Joint Hall of Fame saved to $(save_path)")
 
 println("Joint SR Completed!")
+
+joint_hall_of_fame = equation_search(
+    reshape(joint_data_x, cfg_data["num_dimensions"], :), 
+    joint_data_y; 
+    options=joint_options,
+    parallelism=cfg_sr["parallelism_for_joint_sr"], 
+    niterations=cfg_sr["niterations_for_joint_sr"], 
+)
+
+timestamp = Dates.format(now(), "yyyymmdd_HHMMSS")
+with_logger(FileLogger(joinpath(log_dir, "endtime_$(timestamp).log"))) do
+    # pass
+end
