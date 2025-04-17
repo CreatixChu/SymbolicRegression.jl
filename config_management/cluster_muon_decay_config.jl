@@ -20,15 +20,23 @@ const CONFIG_log = Dict(
     "log_interval" => 1,
 )
 
+# operator/constant/variable all have complexity of 1
 const CONFIG_sr = Dict(
     "binary_operators" => [+, -, *, /],
     "unary_operators" => [exp, log, pow2, pow3, pow4, pow5],
+    "constraints" => [exp => 4, log => 4],
+    "nested_constraints" => [exp => [exp => 0], log => [log => 0]],
+    "maxsize" => 30,
+    "ncycles_per_iteration" => 380,
+    "parsimony" => 0.0,
+    "warmup_maxsize_by" => 0.0,
+    "adaptive_parsimony_scaling" => 1040,
     "parallelism_for_marginal_sr" => :multithreading,
     "parallelism_for_conditional_sr" => :multithreading,
     "parallelism_for_joint_sr" => :multithreading,
-    "niterations_for_marginal_sr" => 100,
-    "niterations_for_conditional_sr" => 100,
-    "niterations_for_joint_sr" => 200,
+    "niterations_for_marginal_sr" => 10000,
+    "niterations_for_conditional_sr" => 10000,
+    "niterations_for_joint_sr" => 20000,
     "num_populations_for_marginal_sr" => 15,
     "num_populations_for_conditional_sr" => 15,
     "num_populations_for_joint_sr" => 15,
