@@ -7,8 +7,9 @@ using DataFrames
 using Random
 using StatsBase
 using IterTools
-include("./config_management/muon_decay_config.jl")
+include("./config_management/cluster_muon_decay_config.jl")
 using Base.Threads
+using LoggingExtras
 using Dates
 using FilePathsBase
 using Serialization
@@ -34,6 +35,13 @@ timestamp = Dates.format(now(), "yyyymmdd_HHMMSS")
 log_dir = "logs/" * cfg_log["log_folder_prefix"] * "_log_$timestamp"
 if !isdir(log_dir)
     mkpath(log_dir)
+end
+
+@info("log folder", log_dir=log_dir)
+
+with_logger(FileLogger(joinpath(log_dir, "meta_data.log"))) do
+    cfg_symbolized = Dict(Symbol(k) => v for (k, v) in cfg_sr)
+    @info("Basic Information", thread_num=Threads.nthreads(), cfg_symbolized...)
 end
 
 #endregion
@@ -88,9 +96,86 @@ end
 #endregion
 
 
-#region Set options for Marginal and Conditional SR 
+#region Set options
+default_options = SymbolicRegression.Options(;
+    # Creating the Search Space
+    binary_operators=Function[+, -, /, *],
+    unary_operators=Function[],
+    maxsize=30,
+    # Setting the Search Size
+    populations=31,
+    population_size=27,
+    ncycles_per_iteration=380,
+    # Working with Complexities
+    parsimony=0.0,
+    warmup_maxsize_by=0.0,
+    adaptive_parsimony_scaling=1040,
+    # Mutations
+    mutation_weights=MutationWeights(;
+        mutate_constant=0.0346,
+        mutate_operator=0.293,
+        swap_operands=0.198,
+        rotate_tree=4.26,
+        add_node=2.47,
+        insert_node=0.0112,
+        delete_node=0.870,
+        simplify=0.00209,
+        randomize=0.000502,
+        do_nothing=0.273,
+        optimize=0.0,
+        form_connection=0.5,
+        break_connection=0.1,
+    ),
+    crossover_probability=0.0259,
+    annealing=true,
+    alpha=3.17,
+    perturbation_factor=0.129,
+    probability_negate_constant=0.00743,
+    # Tournament Selection
+    tournament_selection_n=15,
+    tournament_selection_p=0.982,
+    # Migration between Populations
+    fraction_replaced=0.00036,
+    ## ^Note: the optimal value found was 0.00000425,
+    ## but I thought this was a symptom of doing the sweep on such
+    ## a small problem, so I increased it to the older value of 0.00036
+    fraction_replaced_hof=0.0614,
+    topn=12,
+    # Performance and Parallelization
+    batching=false,
+    batch_size=50,
+)
+
 options = SymbolicRegression.Options(;
-    binary_operators=cfg_sr["binary_operators"], unary_operators=cfg_sr["unary_operators"]
+    binary_operators=cfg_sr["binary_operators"],
+    unary_operators=cfg_sr["unary_operators"],
+    # operator/constant/variable all have complexity of 1
+    constraints=[exp => 4, log => 4],
+    nested_constraints=[exp => [exp => 0], log => [log => 0]],
+    output_directory=log_dir,
+    maxsize=30,
+    ncycles_per_iteration=380,
+    parsimony=0.0,
+    warmup_maxsize_by=0.0,
+    adaptive_parsimony_scaling=1040,
+)
+
+
+
+joint_options = SymbolicRegression.Options(;
+    binary_operators=cfg_sr["binary_operators"], 
+    unary_operators=cfg_sr["unary_operators"], 
+    populations = cfg_sr["num_populations_for_joint_sr"], 
+    population_size = cfg_sr["population_size_for_joint_sr"],
+    # operator/constant/variable all have complexity of 1
+    constraints=[exp => 4, log => 4],
+    nested_constraints=[exp => [exp => 0], log => [log => 0]],
+    output_directory=log_dir,
+    maxsize=30,
+    ncycles_per_iteration=380,
+    parsimony=0.0,
+    warmup_maxsize_by=0.0,
+    adaptive_parsimony_scaling=1040,
 )
 #endregion
 
@@ -99,11 +184,12 @@ options = SymbolicRegression.Options(;
 marginal_halls_of_fame = Vector{Any}(undef, cfg_data["num_dimensions"])
 dominating_pareto_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
 trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
-loggers = [FileLogger(joinpath(log_dir, "marginal$(d).log")) for d in 1:cfg_data["num_dimensions"]]
+# loggers = [FileLogger(joinpath(log_dir, "marginal$(d).log")) for d in 1:cfg_data["num_dimensions"]]
 
 @threads for d in 1:cfg_data["num_dimensions"]
-
     #region marginal_log
+    # with_logger(loggers[d]) do
+        start_time = now()
         hall_of_fame = equation_search(
             reshape(m_xd[d], 1, :), m_yd[d]; 
             options=options, 
@@ -126,6 +212,7 @@ loggers = [FileLogger(joinpath(log_dir, "marginal$(d).log")) for d in 1:cfg_data
         marginal_halls_of_fame[d] = hall_of_fame
         dominating_pareto_marginals[d] = pareto
         trees_marginals[d] = trees
+    # end
 end
 #endregion
 
@@ -142,17 +229,18 @@ trees_conditionals_per_slice = Vector{Any}(undef, cfg_data["num_conditional_slic
 trees_conditionals = [trees_conditionals_per_slice for i in 1:cfg_data["num_dimensions"]]
 
 d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for slice in 1:cfg_data["num_conditional_slices"]]
-logger = Dict{Tuple{Int, Int}, AbstractLogger}()
+# loggers = Dict{Tuple{Int, Int}, AbstractLogger}()
 
-for (d, slice) in d_slice_permutations
-    log_path = joinpath(log_dir, "conditional_$(d)_$(slice).log")
-    logger[(d, slice)] = FileLogger(log_path)
-end
+# for (d, slice) in d_slice_permutations
+#     log_path = joinpath(log_dir, "conditional_$(d)_$(slice).log")
+#     loggers[(d, slice)] = FileLogger(log_path)
+# end
 
 @threads for (d, slice) in d_slice_permutations
     x = reshape(c_xd[d][slice], 1, :)
     y = c_yd[d][slice]
-
+    # with_logger(loggers[(d, slice)]) do
+        start_time = now()
         hall_of_fame = equation_search(
             x, y; 
             options=options, 
@@ -175,6 +263,7 @@ end
         conditional_halls_of_fame[d][slice] = hall_of_fame
         dominating_pareto_conditionals[d][slice] = pareto
         trees_conditionals[d][slice] = trees
+    # end
 end
 #endregion
 
@@ -233,13 +322,12 @@ end
 
 populations = [joint_initial_population[i:i+(cfg_sr["population_size_for_joint_sr"]-1)] for i in 1:cfg_sr["population_size_for_joint_sr"]:(cfg_sr["num_populations_for_joint_sr"]*cfg_sr["population_size_for_joint_sr"])]
 
-joint_options = SymbolicRegression.Options(;
-    binary_operators=cfg_sr["binary_operators"], unary_operators=cfg_sr["unary_operators"], populations = cfg_sr["num_populations_for_joint_sr"], population_size = cfg_sr["population_size_for_joint_sr"]
-    )
-
 # println("Starting joint SR call...Press any key to continue...")
 # readline()
 
+# logger = FileLogger(joinpath(log_dir, "joint.log"))
+# with_logger(logger) do
+    # global joint_hall_of_fame
     joint_hall_of_fame = equation_search(
             reshape(joint_data_x, cfg_data["num_dimensions"], :), 
             joint_data_y; 
@@ -248,6 +336,7 @@ joint_options = SymbolicRegression.Options(;
             initial_populations=populations, 
             niterations=cfg_sr["niterations_for_joint_sr"], 
     )
+# end
 #endregion
 
 # Save the joint hall of fame
