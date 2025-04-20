@@ -7,7 +7,7 @@ using DataFrames
 using Random
 using StatsBase
 using IterTools
-include("./config_management/cluster_muon_decay_config.jl")
+include("./config_management/muon_decay_config.jl")
 using Base.Threads
 using LoggingExtras
 using Dates
@@ -146,6 +146,7 @@ end
 
 options_marginal = []
 for d in 1:cfg_data["num_dimensions"]
+    global options_marginal
     options_marginal = [options_marginal; SymbolicRegression.Options(;
         binary_operators=cfg_sr["binary_operators"],
         unary_operators=cfg_sr["unary_operators"],
@@ -163,6 +164,7 @@ end
 d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for slice in 1:cfg_data["num_conditional_slices"]]
 options_conditional = []
 for (d, slice) in d_slice_permutations
+    global options_conditional
     options_conditional = [options_conditional; SymbolicRegression.Options(;
         binary_operators=cfg_sr["binary_operators"],
         unary_operators=cfg_sr["unary_operators"],
@@ -211,6 +213,7 @@ joint_options_no_init = SymbolicRegression.Options(;
 )
 #endregion
 
+println("Options Set!")
 
 #region Marginal SR calls
 marginal_halls_of_fame = Vector{Any}(undef, cfg_data["num_dimensions"])
@@ -268,7 +271,8 @@ trees_conditionals = [trees_conditionals_per_slice for i in 1:cfg_data["num_dime
 #     loggers[(d, slice)] = FileLogger(log_path)
 # end
 
-@threads for (i, (d, slice)) in enumerate(d_slice_permutations)
+@threads for iter in eachindex(d_slice_permutations)
+    (d, slice) = d_slice_permutations[iter]
 
     x = reshape(c_xd[d][slice], 1, :)
     y = c_yd[d][slice]
@@ -276,7 +280,7 @@ trees_conditionals = [trees_conditionals_per_slice for i in 1:cfg_data["num_dime
         # start_time = now()
         hall_of_fame = equation_search(
             x, y; 
-            options=options_conditional[i], 
+            options=options_conditional[iter], 
             parallelism=cfg_sr["parallelism_for_conditional_sr"], 
             niterations=cfg_sr["niterations_for_conditional_sr"],
         )
