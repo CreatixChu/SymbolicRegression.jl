@@ -144,20 +144,38 @@ end
 #     batch_size=50,
 # )
 
-options = SymbolicRegression.Options(;
-    binary_operators=cfg_sr["binary_operators"],
-    unary_operators=cfg_sr["unary_operators"],
+options_marginal = []
+for d in 1:cfg_data["num_dimensions"]
+    options_marginal = [options_marginal; SymbolicRegression.Options(;
+        binary_operators=cfg_sr["binary_operators"],
+        unary_operators=cfg_sr["unary_operators"],
+        constraints=cfg_sr["constraints"],
+        nested_constraints=cfg_sr["nested_constraints"],
+        output_directory=log_dir*"/marginal_$(d)",
+        maxsize=cfg_sr["maxsize"],
+        ncycles_per_iteration=cfg_sr["ncycles_per_iteration"],
+        parsimony=cfg_sr["parsimony"],
+        warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
+        adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
+    )]
+end
 
-    constraints=cfg_sr["constraints"],
-    nested_constraints=cfg_sr["nested_constraints"],
-    output_directory=log_dir,
-    maxsize=cfg_sr["maxsize"],
-    ncycles_per_iteration=cfg_sr["ncycles_per_iteration"],
-    parsimony=cfg_sr["parsimony"],
-    warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
-    adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
-)
-
+d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for slice in 1:cfg_data["num_conditional_slices"]]
+options_conditional = []
+for (d, slice) in d_slice_permutations
+    options_conditional = [options_conditional; SymbolicRegression.Options(;
+        binary_operators=cfg_sr["binary_operators"],
+        unary_operators=cfg_sr["unary_operators"],
+        constraints=cfg_sr["constraints"],
+        nested_constraints=cfg_sr["nested_constraints"],
+        output_directory=log_dir*"/conditional_$(d)_$(slice)",
+        maxsize=cfg_sr["maxsize"],
+        ncycles_per_iteration=cfg_sr["ncycles_per_iteration"],
+        parsimony=cfg_sr["parsimony"],
+        warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
+        adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
+    )]
+end
 
 
 joint_options = SymbolicRegression.Options(;
@@ -175,6 +193,22 @@ joint_options = SymbolicRegression.Options(;
     warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
     adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
 )
+
+joint_options_no_init = SymbolicRegression.Options(;
+    binary_operators=cfg_sr["binary_operators"], 
+    unary_operators=cfg_sr["unary_operators"], 
+    populations = cfg_sr["num_populations_for_joint_sr"], 
+    population_size = cfg_sr["population_size_for_joint_sr"],
+    
+    constraints=cfg_sr["constraints"],
+    nested_constraints=cfg_sr["nested_constraints"],
+    output_directory=log_dir*"/joint_no_init",
+    maxsize=cfg_sr["maxsize"],
+    ncycles_per_iteration=cfg_sr["ncycles_per_iteration"],
+    parsimony=cfg_sr["parsimony"],
+    warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
+    adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
+)
 #endregion
 
 
@@ -186,19 +220,6 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
 
 @threads for d in 1:cfg_data["num_dimensions"]
 
-    options = SymbolicRegression.Options(;
-    binary_operators=cfg_sr["binary_operators"],
-    unary_operators=cfg_sr["unary_operators"],
-
-    constraints=cfg_sr["constraints"],
-    nested_constraints=cfg_sr["nested_constraints"],
-    output_directory=log_dir*"/marginal_$(d)",
-    maxsize=cfg_sr["maxsize"],
-    ncycles_per_iteration=cfg_sr["ncycles_per_iteration"],
-    parsimony=cfg_sr["parsimony"],
-    warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
-    adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
-    )
     #region marginal_log
     # with_logger(loggers[d]) do
         # start_time = now()
@@ -240,7 +261,6 @@ dominating_pareto_conditionals = [dominating_pareto_conditionals_per_slice for i
 trees_conditionals_per_slice = Vector{Any}(undef, cfg_data["num_conditional_slices"])
 trees_conditionals = [trees_conditionals_per_slice for i in 1:cfg_data["num_dimensions"]]
 
-d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for slice in 1:cfg_data["num_conditional_slices"]]
 # loggers = Dict{Tuple{Int, Int}, AbstractLogger}()
 
 # for (d, slice) in d_slice_permutations
@@ -249,20 +269,6 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
 # end
 
 @threads for (d, slice) in d_slice_permutations
-
-    options = SymbolicRegression.Options(;
-    binary_operators=cfg_sr["binary_operators"],
-    unary_operators=cfg_sr["unary_operators"],
-
-    constraints=cfg_sr["constraints"],
-    nested_constraints=cfg_sr["nested_constraints"],
-    output_directory=log_dir*"/conditional_$(d)_$(slice)",
-    maxsize=cfg_sr["maxsize"],
-    ncycles_per_iteration=cfg_sr["ncycles_per_iteration"],
-    parsimony=cfg_sr["parsimony"],
-    warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
-    adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
-    )
 
     x = reshape(c_xd[d][slice], 1, :)
     y = c_yd[d][slice]
@@ -379,7 +385,7 @@ println("Joint SR Completed!")
 joint_hall_of_fame = equation_search(
     reshape(joint_data_x, cfg_data["num_dimensions"], :), 
     joint_data_y; 
-    options=joint_options,
+    options=joint_options_no_init,
     parallelism=cfg_sr["parallelism_for_joint_sr"], 
     niterations=cfg_sr["niterations_for_joint_sr"], 
 )
