@@ -13,8 +13,6 @@ using LoggingExtras
 using Dates
 using FilePathsBase
 using Serialization
-# using Plots
-# gr()
 cfg_data=CONFIG_data
 cfg_log=CONFIG_log
 cfg_sr=CONFIG_sr
@@ -46,7 +44,7 @@ end
 
 #endregion
 
-# println("Imports Completed!...Press any key to continue...")
+println("Imports Completed!")
 # readline()
 
 
@@ -72,7 +70,7 @@ joint_data_x = vcat([vcat([hcat(x, repeat(info', length(x))) for (x, info) in zi
 joint_data_y = vcat([vcat([y*info for (y, info) in zip(c_yd[1], c_yd_slice_info[1])]...) for d in 1:cfg_data["num_dimensions"]]...)
 #endregion
 
-# println("Data Loaded!...Press any key to continue...")
+println("Data Loaded!")
 # readline()
 
 
@@ -196,11 +194,11 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
             parallelism=cfg_sr["parallelism_for_marginal_sr"], 
             niterations=cfg_sr["niterations_for_marginal_sr"]
         )
-        end_time = now()
-        duration = format_hms(end_time - start_time)
-        start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
-        end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
-        @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
+        # end_time = now()
+        # duration = format_hms(end_time - start_time)
+        # start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
+        # end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
+        # @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
 
         pareto = calculate_pareto_frontier(hall_of_fame)
         trees = [member.tree for member in pareto]
@@ -216,7 +214,7 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
 end
 #endregion
 
-# println("Marginal SR Completed!...Press any key to continue...")
+println("Marginal SR Completed!")
 # readline()
 
 
@@ -247,11 +245,11 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
             parallelism=cfg_sr["parallelism_for_conditional_sr"], 
             niterations=cfg_sr["niterations_for_conditional_sr"],
         )
-        end_time = now()
-        duration = format_hms(end_time - start_time)
-        start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
-        end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
-        @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
+        # end_time = now()
+        # duration = format_hms(end_time - start_time)
+        # start_time = Dates.format(start_time, "yyyymmdd_HHMMSS")
+        # end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
+        # @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
 
         pareto = calculate_pareto_frontier(hall_of_fame)
         trees = [member.tree for member in pareto]
@@ -267,7 +265,7 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
 end
 #endregion
 
-# println("Conditional SR Completed!...Press any key to continue...")
+println("Conditional SR Completed!")
 # readline()
 
 #region Joint SR call
@@ -322,7 +320,7 @@ end
 
 populations = [joint_initial_population[i:i+(cfg_sr["population_size_for_joint_sr"]-1)] for i in 1:cfg_sr["population_size_for_joint_sr"]:(cfg_sr["num_populations_for_joint_sr"]*cfg_sr["population_size_for_joint_sr"])]
 
-# println("Starting joint SR call...Press any key to continue...")
+println("Starting joint SR call!")
 # readline()
 
 # logger = FileLogger(joinpath(log_dir, "joint.log"))
@@ -357,7 +355,7 @@ joint_hall_of_fame = equation_search(
     niterations=cfg_sr["niterations_for_joint_sr"], 
 )
 
-timestamp = Dates.format(now(), "yyyymmdd_HHMMSS")
-with_logger(FileLogger(joinpath(log_dir, "endtime_$(timestamp).log"))) do
-    # pass
-end
+# timestamp = Dates.format(now(), "yyyymmdd_HHMMSS")
+# with_logger(FileLogger(joinpath(log_dir, "endtime_$(timestamp).log"))) do
+#     # pass
+# end
