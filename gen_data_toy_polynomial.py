@@ -49,7 +49,7 @@ data = np.hstack([y.reshape(-1, 1), marginal_y.reshape(-1, 1)])
 np.savetxt("./data/processed_data/toy_2D_polynomial_marginal_data_1.csv", data, delimiter=",")
 
 # Generate conditionals
-data_fix = [0.5, 2.2, 4.6, 5.8, 7.3, 8.9]
+data_fix = np.random.choice(x, size=10, replace=False)
 for i,data_fixed in enumerate(data_fix):
     conditional_x = toy_2D_conditional_x(x, data_fixed, x_high, x_low)
     data = np.hstack([x.reshape(-1, 1), conditional_x.reshape(-1, 1)])
