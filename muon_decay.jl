@@ -185,9 +185,23 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
 # loggers = [FileLogger(joinpath(log_dir, "marginal$(d).log")) for d in 1:cfg_data["num_dimensions"]]
 
 @threads for d in 1:cfg_data["num_dimensions"]
+
+    options = SymbolicRegression.Options(;
+    binary_operators=cfg_sr["binary_operators"],
+    unary_operators=cfg_sr["unary_operators"],
+
+    constraints=cfg_sr["constraints"],
+    nested_constraints=cfg_sr["nested_constraints"],
+    output_directory=log_dir*"_marginal_$(d)",
+    maxsize=cfg_sr["maxsize"],
+    ncycles_per_iteration=cfg_sr["ncycles_per_iteration"],
+    parsimony=cfg_sr["parsimony"],
+    warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
+    adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
+    )
     #region marginal_log
     # with_logger(loggers[d]) do
-        start_time = now()
+        # start_time = now()
         hall_of_fame = equation_search(
             reshape(m_xd[d], 1, :), m_yd[d]; 
             options=options, 
@@ -235,10 +249,25 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
 # end
 
 @threads for (d, slice) in d_slice_permutations
+
+    options = SymbolicRegression.Options(;
+    binary_operators=cfg_sr["binary_operators"],
+    unary_operators=cfg_sr["unary_operators"],
+
+    constraints=cfg_sr["constraints"],
+    nested_constraints=cfg_sr["nested_constraints"],
+    output_directory=log_dir*"_conditional_$(d)_$(slice)",
+    maxsize=cfg_sr["maxsize"],
+    ncycles_per_iteration=cfg_sr["ncycles_per_iteration"],
+    parsimony=cfg_sr["parsimony"],
+    warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
+    adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
+    )
+
     x = reshape(c_xd[d][slice], 1, :)
     y = c_yd[d][slice]
     # with_logger(loggers[(d, slice)]) do
-        start_time = now()
+        # start_time = now()
         hall_of_fame = equation_search(
             x, y; 
             options=options, 
