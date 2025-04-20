@@ -22,12 +22,14 @@ def toy_2D_conditional_x(x, y_fix, x_high, x_low):
     y_fix = np.ones(np.shape(x))
     z = toy_2D_polynomial(x, y_fix)
     z = z/marginal_prob
+    return z
 
 def toy_2D_conditional_y(y, x_fix, y_high, y_low):
     marginal_prob = toy_2D_marginal_x(x_fix, y_high, y_low)
     x_fix = np.ones(np.shape(y))
     z = toy_2D_polynomial(y, x_fix)
     z = z/marginal_prob
+    return z
 
 x = np.linspace(0, 10, 100)
 y = np.linspace(0, 10, 100)
@@ -40,14 +42,18 @@ x_high = 10
 
 # Generate marginals
 marginal_x = toy_2D_marginal_x(x, y_high, y_low)
-np.savetxt("toy_2D_polynomial_marginal_x.csv", marginal_x, delimiter=",")
+data = np.hstack([x.reshape(-1, 1), marginal_x.reshape(-1, 1)])
+np.savetxt("./data/processed_data/toy_2D_polynomial_marginal_x.csv", data, delimiter=",")
 marginal_y = toy_2D_marginal_y(y, x_high, x_low)
-np.savetxt("toy_2D_polynomial_marginal_y.csv", marginal_y, delimiter=",")
+data = np.hstack([y.reshape(-1, 1), marginal_y.reshape(-1, 1)])
+np.savetxt("./data/processed_data/toy_2D_polynomial_marginal_y.csv", data, delimiter=",")
 
 # Generate conditionals
 y_fix = [0.5, 2.2, 4.6, 5.8, 7.3, 8.9]
 for i,y_fixed in enumerate(y_fix):
     conditional_x = toy_2D_conditional_x(x, y_fixed, x_high, x_low)
-    np.savetxt(f"toy_2D_polynomial_conditional_x_{i}.csv", conditional_x, delimiter=",")
+    data = np.hstack([x.reshape(-1, 1), conditional_x.reshape(-1, 1)])
+    np.savetxt(f"./data/processed_data/toy_2D_polynomial_conditional_x_{i}.csv", data, delimiter=",")
     conditional_y = toy_2D_conditional_y(y, y_fixed, y_high, y_low)
-    np.savetxt(f"toy_2D_polynomial_conditional_y_{i}.csv", conditional_y, delimiter=",")
+    data = np.hstack([y.reshape(-1, 1), conditional_y.reshape(-1, 1)])
+    np.savetxt(f"./data/processed_data/toy_2D_polynomial_conditional_y_{i}.csv", data, delimiter=",")
