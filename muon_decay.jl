@@ -225,7 +225,7 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
         # start_time = now()
         hall_of_fame = equation_search(
             reshape(m_xd[d], 1, :), m_yd[d]; 
-            options=options, 
+            options=options_marginal[d], 
             parallelism=cfg_sr["parallelism_for_marginal_sr"], 
             niterations=cfg_sr["niterations_for_marginal_sr"]
         )
@@ -268,7 +268,7 @@ trees_conditionals = [trees_conditionals_per_slice for i in 1:cfg_data["num_dime
 #     loggers[(d, slice)] = FileLogger(log_path)
 # end
 
-@threads for (d, slice) in d_slice_permutations
+@threads for (i, (d, slice)) in enumerate(d_slice_permutations)
 
     x = reshape(c_xd[d][slice], 1, :)
     y = c_yd[d][slice]
@@ -276,7 +276,7 @@ trees_conditionals = [trees_conditionals_per_slice for i in 1:cfg_data["num_dime
         # start_time = now()
         hall_of_fame = equation_search(
             x, y; 
-            options=options, 
+            options=options_conditional[i], 
             parallelism=cfg_sr["parallelism_for_conditional_sr"], 
             niterations=cfg_sr["niterations_for_conditional_sr"],
         )
