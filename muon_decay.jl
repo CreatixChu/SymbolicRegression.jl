@@ -192,7 +192,7 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
 
     constraints=cfg_sr["constraints"],
     nested_constraints=cfg_sr["nested_constraints"],
-    output_directory=log_dir*"_marginal_$(d)",
+    output_directory=log_dir*"/marginal_$(d)",
     maxsize=cfg_sr["maxsize"],
     ncycles_per_iteration=cfg_sr["ncycles_per_iteration"],
     parsimony=cfg_sr["parsimony"],
@@ -256,7 +256,7 @@ d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for sli
 
     constraints=cfg_sr["constraints"],
     nested_constraints=cfg_sr["nested_constraints"],
-    output_directory=log_dir*"_conditional_$(d)_$(slice)",
+    output_directory=log_dir*"/conditional_$(d)_$(slice)",
     maxsize=cfg_sr["maxsize"],
     ncycles_per_iteration=cfg_sr["ncycles_per_iteration"],
     parsimony=cfg_sr["parsimony"],
