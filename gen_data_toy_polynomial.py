@@ -43,17 +43,28 @@ x_high = 10
 # Generate marginals
 marginal_x = toy_2D_marginal_x(x, y_high, y_low)
 data = np.hstack([x.reshape(-1, 1), marginal_x.reshape(-1, 1)])
-np.savetxt("./data/processed_data/toy_2D_polynomial_marginal_x.csv", data, delimiter=",")
+np.savetxt("./data/processed_data/toy_2D_polynomial_marginal_data_0.csv", data, delimiter=",")
 marginal_y = toy_2D_marginal_y(y, x_high, x_low)
 data = np.hstack([y.reshape(-1, 1), marginal_y.reshape(-1, 1)])
-np.savetxt("./data/processed_data/toy_2D_polynomial_marginal_y.csv", data, delimiter=",")
+np.savetxt("./data/processed_data/toy_2D_polynomial_marginal_data_1.csv", data, delimiter=",")
 
 # Generate conditionals
-y_fix = [0.5, 2.2, 4.6, 5.8, 7.3, 8.9]
-for i,y_fixed in enumerate(y_fix):
-    conditional_x = toy_2D_conditional_x(x, y_fixed, x_high, x_low)
+data_fix = [0.5, 2.2, 4.6, 5.8, 7.3, 8.9]
+for i,data_fixed in enumerate(data_fix):
+    conditional_x = toy_2D_conditional_x(x, data_fixed, x_high, x_low)
     data = np.hstack([x.reshape(-1, 1), conditional_x.reshape(-1, 1)])
-    np.savetxt(f"./data/processed_data/toy_2D_polynomial_conditional_x_{i}.csv", data, delimiter=",")
-    conditional_y = toy_2D_conditional_y(y, y_fixed, y_high, y_low)
+    np.savetxt(f"./data/processed_data/toy_2D_polynomial_conditional_data_0_slice_{i}.csv", data, delimiter=",")
+    conditional_y = toy_2D_conditional_y(y, data_fixed, y_high, y_low)
     data = np.hstack([y.reshape(-1, 1), conditional_y.reshape(-1, 1)])
-    np.savetxt(f"./data/processed_data/toy_2D_polynomial_conditional_y_{i}.csv", data, delimiter=",")
+    np.savetxt(f"./data/processed_data/toy_2D_polynomial_conditional_data_1_slice_{i}.csv", data, delimiter=",")
+
+# Generate conditional slices
+conditional_slices_x = np.zeros((len(data_fix), 2))
+conditional_slices_y = np.zeros((len(data_fix), 2))
+for i,data_fixed in enumerate(data_fix):
+    conditional_slices_x[i][0] = data_fixed
+    conditional_slices_x[i][1] = toy_2D_marginal_y(data_fixed, x_high, x_low)
+    conditional_slices_y[i][0] = data_fixed
+    conditional_slices_y[i][1] = toy_2D_marginal_y(data_fixed, y_high, y_low)
+np.savetxt("./data/processed_data/toy_2D_polynomial_conditional_slices_0.csv", conditional_slices_x, delimiter=",")
+np.savetxt("./data/processed_data/toy_2D_polynomial_conditional_slices_1.csv", conditional_slices_y, delimiter=",")
