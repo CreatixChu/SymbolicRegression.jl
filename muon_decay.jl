@@ -343,7 +343,7 @@ for (d, slice) in d_slice_permutations
     joint_pop_members_per_dim_and_slice = deepcopy(dominating_pareto_conditionals[d][slice])
     # This assumes that the marginals are all independent
     for fixed_variable in fixed_variables
-       joint_pop_members_per_dim_and_slice = multiply_conditionals_with_marginals(joint_pop_members_per_dim_and_slice, dominating_pareto_marginals[fixed_variable].members)
+       joint_pop_members_per_dim_and_slice = multiply_conditionals_with_marginals(joint_pop_members_per_dim_and_slice, dominating_pareto_marginals[fixed_variable])
        if cfg_sr["joint_max_num_expressions_per_dim_and_slice"]!= Inf
             shuffle!(joint_pop_members_per_dim_and_slice)    
             joint_pop_members_per_dim_and_slice = sample(joint_pop_members_per_dim_and_slice, min(length(joint_pop_members_per_dim_and_slice), cfg_sr["joint_max_num_expressions_per_dim_and_slice"]); replace=false)
