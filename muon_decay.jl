@@ -307,6 +307,27 @@ end
 println("Conditional SR Completed!")
 # readline()
 
+# Save the marginal and conditional hall of fame and pareto frontiers
+save_path = joinpath(log_dir, "marginal_halls_of_fame.jls")
+open(save_path, "w") do io
+    serialize(io, marginal_halls_of_fame) # to load the data again use deserialze
+end
+
+save_path = joinpath(log_dir, "dominating_pareto_marginals.jls")
+open(save_path, "w") do io
+    serialize(io, dominating_pareto_marginals) # to load the data again use deserialze
+end
+
+save_path = joinpath(log_dir, "conditional_halls_of_fame.jls")
+open(save_path, "w") do io
+    serialize(io, conditional_halls_of_fame) # to load the data again use deserialze
+end
+
+save_path = joinpath(log_dir, "dominating_pareto_conditionals.jls")
+open(save_path, "w") do io
+    serialize(io, dominating_pareto_conditionals) # to load the data again use deserialze
+end
+
 #region Joint SR call
 
 #region helper funtions to produce joint expression trees
@@ -340,7 +361,7 @@ joint_initial_population = []
 dimensions = 1:cfg_data["num_dimensions"]
 for (d, slice) in d_slice_permutations
     fixed_variables = filter(x -> x !=d, dimensions)
-    joint_pop_members_per_dim_and_slice = deepcopy(dominating_pareto_conditionals[d][slice])
+    joint_pop_members_per_dim_and_slice = deepcopy(conditional_halls_of_fame[d][slice].members)
     # This assumes that the marginals are all independent
     for fixed_variable in fixed_variables
        joint_pop_members_per_dim_and_slice = multiply_conditionals_with_marginals(joint_pop_members_per_dim_and_slice, dominating_pareto_marginals[fixed_variable])
