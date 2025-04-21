@@ -18,6 +18,10 @@ cfg_sr=CONFIG_sr
 
 log_dir = 
 
+joint_data_x = vcat([vcat([hcat(x, repeat(info', length(x))) for (x, info) in zip(c_xd[d], c_xd_slice_info[d])]...) for d in 1:cfg_data["num_dimensions"]]...)
+
+joint_data_y = vcat([vcat([y*info for (y, info) in zip(c_yd[1], c_yd_slice_info[1])]...) for d in 1:cfg_data["num_dimensions"]]...)
+
 d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for slice in 1:cfg_data["num_conditional_slices"]]
 
 joint_options = SymbolicRegression.Options(;
