@@ -18,6 +18,22 @@ cfg_sr=CONFIG_sr
 
 log_dir = 
 
+max_marginal_index = cfg_data["num_dimensions"]-1
+max_conditional_index = cfg_data["num_conditional_slices"]-1
+df_m = [CSV.read(cfg_data["data_path_and_prefix"] * "_marginal_data_$(i).csv", DataFrame; header=false) for i in 0:max_marginal_index]
+df_c_slices = [CSV.read(cfg_data["data_path_and_prefix"] * "_conditional_slices_$(i).csv", DataFrame; header=false) for i in 0:max_marginal_index]
+df_c_data_slices = [[CSV.read(cfg_data["data_path_and_prefix"] * "_conditional_data_$(i)_slice_$(j).csv", DataFrame; header=false) for j in 0:max_conditional_index] for i in 0:max_marginal_index]
+
+m_xd = [df[:, 1] for df in df_m]
+m_yd = [df[:, end] for df in df_m]
+
+num_variables_conditioned_on = cfg_data["num_dimensions"]-1
+c_xd_slice_info = [[collect(df_c_slices[d][i, 1:num_variables_conditioned_on]) for i in 1:cfg_data["num_conditional_slices"]] for d in 1:cfg_data["num_dimensions"]]
+c_yd_slice_info = [[df_c_slices[d][i, end] for i in 1:cfg_data["num_conditional_slices"]] for d in 1:cfg_data["num_dimensions"]]
+
+c_xd = [[df[:, 1] for df in df_c_data_slices[d]] for d in 1:cfg_data["num_dimensions"]]
+c_yd = [[df[:, 2] for df in df_c_data_slices[d]] for d in 1:cfg_data["num_dimensions"]]
+
 joint_data_x = vcat([vcat([hcat(x, repeat(info', length(x))) for (x, info) in zip(c_xd[d], c_xd_slice_info[d])]...) for d in 1:cfg_data["num_dimensions"]]...)
 
 joint_data_y = vcat([vcat([y*info for (y, info) in zip(c_yd[1], c_yd_slice_info[1])]...) for d in 1:cfg_data["num_dimensions"]]...)
