@@ -18,6 +18,8 @@ cfg_sr=CONFIG_sr
 
 log_dir = 
 
+d_slice_permutations = [(d, slice) for d in 1:cfg_data["num_dimensions"] for slice in 1:cfg_data["num_conditional_slices"]]
+
 joint_options = SymbolicRegression.Options(;
     binary_operators=cfg_sr["binary_operators"], 
     unary_operators=cfg_sr["unary_operators"], 
