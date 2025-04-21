@@ -7,7 +7,7 @@ using DataFrames
 using Random
 using StatsBase
 using IterTools
-include("./config_management/muon_decay_config.jl")
+include("./config_management/cluster_toy_polynomial_config.jl")
 using Base.Threads
 using LoggingExtras
 using Dates
@@ -357,6 +357,7 @@ else
 end
 #endregion
 
+println("Got here!1")
 joint_initial_population = []
 dimensions = 1:cfg_data["num_dimensions"]
 for (d, slice) in d_slice_permutations
@@ -373,12 +374,15 @@ for (d, slice) in d_slice_permutations
     append!(joint_initial_population, joint_pop_members_per_dim_and_slice)
 end
 
+println("Got here!2")
 shuffle!(joint_initial_population)
 if cfg_sr["joint_max_num_expressions"] != Inf
     joint_initial_population = sample(joint_initial_population, min(length(joint_initial_population), cfg_sr["joint_max_num_expressions"]); replace=false)
 end
 
+println("Got here!3")
 populations = [joint_initial_population[i:i+(cfg_sr["population_size_for_joint_sr"]-1)] for i in 1:cfg_sr["population_size_for_joint_sr"]:(cfg_sr["num_populations_for_joint_sr"]*cfg_sr["population_size_for_joint_sr"])]
+println("Got here!4")
 
 println("Starting joint SR call!")
 # readline()
