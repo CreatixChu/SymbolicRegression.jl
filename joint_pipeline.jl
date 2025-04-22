@@ -98,7 +98,9 @@ end
 
 function cartesian_product_multiply_conditionals_with_marginals(conditional_pop_members, marginal_pop_members)
     joint_pop_members = repeat(deepcopy(conditional_pop_members), inner=size(marginal_pop_members))
+    joint_pop_members = [deepcopy(member) for member in joint_pop_members]
     marginal_pop_members_expanded = repeat(deepcopy(marginal_pop_members), outer=size(conditional_pop_members))
+    marginal_pop_members_expanded = [deepcopy(member) for member in marginal_pop_members_expanded]
     marginal_trees = [member.tree for member in marginal_pop_members_expanded]
     multiply_trees = (conditional_tree, marginal_tree) -> (conditional_tree * marginal_tree)
     setfield!.(joint_pop_members, :tree, multiply_trees.(getfield.(joint_pop_members, :tree), marginal_trees))
@@ -151,8 +153,8 @@ println("Starting joint SR call!")
             reshape(joint_data_x, cfg_data["num_dimensions"], :), 
             joint_data_y; 
             options=joint_options,
-            parallelism=cfg_sr["parallelism_for_joint_sr"], 
             initial_populations=populations, 
+            parallelism=cfg_sr["parallelism_for_joint_sr"], 
             niterations=cfg_sr["niterations_for_joint_sr"], 
     )
 # end
