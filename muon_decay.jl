@@ -238,13 +238,13 @@ trees_marginals = Vector{Any}(undef, cfg_data["num_dimensions"])
         # end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
         # @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
 
-        pareto = calculate_pareto_frontier(hall_of_fame)
-        trees = [member.tree for member in pareto]
-
         for member in eachindex(hall_of_fame.members)
             update_feature!(hall_of_fame.members[member].tree.tree, 1, d)
         end
         
+        pareto = calculate_pareto_frontier(hall_of_fame)
+        trees = [member.tree for member in pareto]
+
         marginal_halls_of_fame[d] = hall_of_fame
         dominating_pareto_marginals[d] = pareto
         trees_marginals[d] = trees
@@ -290,12 +290,12 @@ trees_conditionals = [trees_conditionals_per_slice for i in 1:cfg_data["num_dime
         # end_time = Dates.format(end_time, "yyyymmdd_HHMMSS")
         # @info("Time Information", start_time=start_time, end_time=end_time, duration=duration)
 
-        pareto = calculate_pareto_frontier(hall_of_fame)
-        trees = [member.tree for member in pareto]
-
         for member in eachindex(hall_of_fame.members)
             update_feature!(hall_of_fame.members[member].tree.tree, 1, d)
         end
+
+        pareto = calculate_pareto_frontier(hall_of_fame)
+        trees = [member.tree for member in pareto]
 
         conditional_halls_of_fame[d][slice] = hall_of_fame
         dominating_pareto_conditionals[d][slice] = pareto
