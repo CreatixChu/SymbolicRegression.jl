@@ -1,20 +1,20 @@
 import numpy as np
 
 def toy_2D_polynomial(x, y):
-    z = x**4 + x*y**3 + y**2 + x*y + y + 3
+    z = x**4 + x*y**3 + x*y + y
     z = z*0.001
     return z
 
 def toy_2D_marginal_x(x, y_high, y_low):
-    func = lambda x, y : x**4*y + (x*y**4)/4 + (y**3)/3 + x*(y**2)/2 + (y**2)/2 + 3*y
+    func = lambda x, y : x**4*y + (x*y**4)/4 + x*(y**2)/2 + (y**2)/2
     z = func(x, y_high) - func(x, y_low)
-    z = z*0.01
+    z = z*0.001
     return z
 
 def toy_2D_marginal_y(y, x_high, x_low):
-    func = lambda x, y: (x**5)/5 + (x**2)*(y**3)/2 + x*(y**2) + (x**2)*y/2 + x*y + 3*x
-    z = func(y, x_high) - func(y, x_low)
-    z = z*0.01
+    func = lambda x, y: (x**5)/5 + (x**2)*(y**3)/2 + (x**2)*y/2 + x*y
+    z = func(x_high, y) - func(x_low, y)
+    z = z*0.001
     return z
 
 def toy_2D_conditional_x(x, y_fix, x_high, x_low):
@@ -27,7 +27,7 @@ def toy_2D_conditional_x(x, y_fix, x_high, x_low):
 def toy_2D_conditional_y(y, x_fix, y_high, y_low):
     marginal_prob = toy_2D_marginal_x(x_fix, y_high, y_low)
     x_fix = np.ones(np.shape(y))
-    z = toy_2D_polynomial(y, x_fix)
+    z = toy_2D_polynomial(x_fix, y)
     z = z/marginal_prob
     return z
 
