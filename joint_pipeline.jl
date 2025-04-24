@@ -16,9 +16,14 @@ cfg_data = CONFIG_data
 cfg_log = CONFIG_log
 cfg_sr = CONFIG_sr
 
-log_dir =
-    max_marginal_index = cfg_data["num_dimensions"] - 1
+top_level_log_dir = "./logs"
+
+log_dir = joinpath(top_level_log_dir, maximum(filter(f -> startswith(f, "cluster_"), readdir(top_level_log_dir))))
+
+max_marginal_index = cfg_data["num_dimensions"] - 1
 max_conditional_index = cfg_data["num_conditional_slices"] - 1
+
+
 df_m = [
     CSV.read(
         cfg_data["data_path_and_prefix"] * "_marginal_data_$(i).csv",
@@ -26,6 +31,7 @@ df_m = [
         header=false,
     ) for i in 0:max_marginal_index
 ]
+
 df_c_slices = [
     CSV.read(
         cfg_data["data_path_and_prefix"] * "_conditional_slices_$(i).csv",
@@ -33,6 +39,7 @@ df_c_slices = [
         header=false,
     ) for i in 0:max_marginal_index
 ]
+
 df_c_data_slices = [
     [
         CSV.read(
