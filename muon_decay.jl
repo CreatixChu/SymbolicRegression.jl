@@ -158,6 +158,8 @@ for d in 1:cfg_data["num_dimensions"]
         parsimony=cfg_sr["parsimony"],
         warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
         adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
+        progress=cfg_sr["progress"],
+        verbosity=cfg_sr["verbosity"]
     )]
 end
 
@@ -176,6 +178,8 @@ for (d, slice) in d_slice_permutations
         parsimony=cfg_sr["parsimony"],
         warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
         adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
+        progress=cfg_sr["progress"],
+        verbosity=cfg_sr["verbosity"]
     )]
 end
 
@@ -194,6 +198,8 @@ joint_options = SymbolicRegression.Options(;
     parsimony=cfg_sr["parsimony"],
     warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
     adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
+    progress=cfg_sr["progress"],
+    verbosity=cfg_sr["verbosity"]
 )
 
 joint_options_no_init = SymbolicRegression.Options(;
@@ -210,6 +216,8 @@ joint_options_no_init = SymbolicRegression.Options(;
     parsimony=cfg_sr["parsimony"],
     warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
     adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
+    progress=cfg_sr["progress"],
+    verbosity=cfg_sr["verbosity"]
 )
 #endregion
 

@@ -104,6 +104,8 @@ joint_options = SymbolicRegression.Options(;
     parsimony=cfg_sr["parsimony"],
     warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
     adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
+    progress=cfg_sr["progress"],
+    verbosity=cfg_sr["verbosity"]
 )
 
 joint_options_no_init = SymbolicRegression.Options(;
@@ -119,6 +121,8 @@ joint_options_no_init = SymbolicRegression.Options(;
     parsimony=cfg_sr["parsimony"],
     warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
     adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
+    progress=cfg_sr["progress"],
+    verbosity=cfg_sr["verbosity"]
 )
 
 # Save the marginal and conditional hall of fame and pareto frontiers

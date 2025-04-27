@@ -44,5 +44,7 @@ const CONFIG_sr = Dict(
     "population_size_for_joint_sr" => 30,
     "joint_expression_possibilities" => "cartesian", # "one_to_one" or "cartesian"    
     "joint_max_num_expressions_per_dim_and_slice" => 30, # use Inf to avoid limiting growth in number of expressions per dim and slice when multiplying conditionals and marginals
-    "joint_max_num_expressions" => 450 # use Inf to avoid limiting number of expressions
+    "joint_max_num_expressions" => 450, # use Inf to avoid limiting number of expressions
+    "progress" => false,
+    "verbosity" => false
 )
