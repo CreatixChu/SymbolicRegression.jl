@@ -7,8 +7,8 @@
 #SBATCH --output=logs/slurm-%j-%N.out               # the print of xxx.jl will be logged in this file, %N for node name, %j for job id:w
 
 module load StdEnv/2023 julia/1.11.3
-julia --thread=20 muon_decay.jl
-julia --thread=20 joint_pipeline.jl
+julia --thread=64 muon_decay.jl
+julia --thread=64 joint_pipeline.jl
 
 # srun --cpus-per-task=1 --mem=16G --time=01:00:00 --pty bash 
 # marginal 1000 nitr        take 4 min
