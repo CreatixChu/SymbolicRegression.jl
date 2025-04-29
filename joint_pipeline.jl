@@ -140,7 +140,25 @@ dominating_pareto_conditionals = deserialize(read_path)
 
 #region Joint SR call
 
-#region helper funtions to produce joint expression trees
+#region Helper function to identify if the node is not constant
+function check_is_not_constant(node::Node)
+    # Only check leaf (degree==0) feature nodes (non-constant)
+    is_not_constant_bool=false
+    if node.degree == 0 && !node.constant
+        is_not_constant_bool=true
+    elseif node.degree >= 1
+        # Recursively update children: left child is always defined;
+        is_not_constant_bool = check_is_not_constant(node.l)
+        # Right child is defined only for binary operators (degree==2)
+        if node.degree == 2
+            is_not_constant_bool = is_not_constant_bool || check_is_not_constant(node.r)
+        end
+    end
+    return is_not_constant_bool
+end
+#endregion
+
+#region helper functions to produce joint expression trees
 function one_to_one_multiply_conditionals_with_marginals(
     conditional_pop_members, marginal_pop_members
 )
