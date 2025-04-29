@@ -47,5 +47,7 @@ const CONFIG_sr = Dict(
     "joint_max_num_expressions_per_dim_and_slice" => 30, # use Inf to avoid limiting growth in number of expressions per dim and slice when multiplying conditionals and marginals
     "joint_max_num_expressions" => 450, # use Inf to avoid limiting number of expressions
     "progress" => false,
-    "verbosity" => false
+    "verbosity" => false,
+    "joint_use_frequency" => false,
+    "joint_use_frequency_in_tournament" => false
 )

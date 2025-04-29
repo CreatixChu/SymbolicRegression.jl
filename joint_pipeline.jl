@@ -105,7 +105,9 @@ joint_options = SymbolicRegression.Options(;
     warmup_maxsize_by=cfg_sr["warmup_maxsize_by"],
     adaptive_parsimony_scaling=cfg_sr["adaptive_parsimony_scaling"],
     progress=cfg_sr["progress"],
-    verbosity=cfg_sr["verbosity"]
+    verbosity=cfg_sr["verbosity"],
+    use_frequency=cfg_sr["joint_use_frequency"],
+    use_frequency_in_tournament=cfg_sr["joint_use_frequency_in_tournament"]
 )
 
 joint_options_no_init = SymbolicRegression.Options(;
