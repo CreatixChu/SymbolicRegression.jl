@@ -156,6 +156,12 @@ function check_is_not_constant(node::Node)
     end
     return is_not_constant_bool
 end
+
+function filter_constant_expressions(popmembers)
+    ind_sel = check_is_not_constant.(getfield.(getfield.(popmembers, :tree), :tree))
+    popmembers_kept = popmembers[ind_sel]
+    return popmembers_kept
+end
 #endregion
 
 #region helper functions to produce joint expression trees
@@ -208,14 +214,12 @@ joint_initial_population = []
 dimensions = 1:cfg_data["num_dimensions"]
 for (d, slice) in d_slice_permutations
     fixed_variables = filter(x -> x != d, dimensions)
-    joint_pop_members_per_dim_and_slice = deepcopy(
-        conditional_halls_of_fame[d][slice].members
-    )
+    joint_pop_members_per_dim_and_slice = deepcopy(conditional_halls_of_fame[d][slice].members)
+    joint_pop_members_per_dim_and_slice = filter_constant_expressions(joint_pop_members_per_dim_and_slice)
     # This assumes that the marginals are all independent
     for fixed_variable in fixed_variables
-        joint_pop_members_per_dim_and_slice = multiply_conditionals_with_marginals(
-            joint_pop_members_per_dim_and_slice, dominating_pareto_marginals[fixed_variable]
-        )
+        marginal_pop_members_per_dim = filter_constant_expressions(dominating_pareto_marginals[fixed_variable])
+        joint_pop_members_per_dim_and_slice = multiply_conditionals_with_marginals(joint_pop_members_per_dim_and_slice, marginal_pop_members_per_dim)
         if cfg_sr["joint_max_num_expressions_per_dim_and_slice"] != Inf
             shuffle!(joint_pop_members_per_dim_and_slice)
             joint_pop_members_per_dim_and_slice = sample(
