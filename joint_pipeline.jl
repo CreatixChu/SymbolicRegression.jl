@@ -12,6 +12,7 @@ using LoggingExtras
 using Dates
 using FilePathsBase
 using Serialization
+using DynamicExpressions
 cfg_data = CONFIG_data
 cfg_log = CONFIG_log
 cfg_sr = CONFIG_sr
@@ -245,6 +246,17 @@ if cfg_sr["joint_max_num_expressions"] != Inf
         replace=false,
     )
 end
+
+println("Insert ground truth...")
+expr_type = Expression{Float64, Node{Float64}}
+node_type = node_type = Node{Float64}
+metadata = DynamicExpressions.get_metadata(joint_initial_population[1].tree)
+ground_truth_expr = parse_expression(:(Main.pow4(x1)+x1*Main.pow3(x1)+x1*x1 +x1), operators=metadata.operators, variable_names=metadata.variable_names, expression_type=expr_type, node_type=node_type)
+all_nodes = collect(ground_truth_expr.tree)
+all_nodes[13].feature = 2
+all_nodes[12].feature = 2
+all_nodes[9].feature = 2
+joint_initial_population[1].tree = ground_truth_expr
 
 println("Alocating expressions to populations...")
 populations = [
