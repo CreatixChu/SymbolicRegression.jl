@@ -25,7 +25,7 @@ const CONFIG_sr = Dict(
     "binary_operators" => [+, -, *, /],
     "unary_operators" => [exp, log, pow2, pow3, pow4, pow5],
     "constraints" => [exp => 4, log => 4],
-    "nested_constraints" => [exp => [exp => 0], log => [log => 0]],
+    "nested_constraints" => [exp => [exp => 0], log => [log => 0], pow2 => [pow2 => 0], pow3 => [pow3 => 0], pow4 => [pow4 => 0], pow5 => [pow5 => 0]],
     "maxsize" => 30,
     "ncycles_per_iteration" => 380,
     "parsimony" => 0.0,
