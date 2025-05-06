@@ -1,20 +1,21 @@
 import numpy as np
+nc = 1/3.28e5
 
 def toy_2D_polynomial(x, y):
     z = x**4 + x*y**3 + x*y + y
-    z = z*0.001
+    z = z*nc
     return z
 
 def toy_2D_marginal_x(x, y_high, y_low):
     func = lambda x, y : x**4*y + (x*y**4)/4 + x*(y**2)/2 + (y**2)/2
     z = func(x, y_high) - func(x, y_low)
-    z = z*0.001
+    z = z*nc
     return z
 
 def toy_2D_marginal_y(y, x_high, x_low):
     func = lambda x, y: (x**5)/5 + (x**2)*(y**3)/2 + (x**2)*y/2 + x*y
     z = func(x_high, y) - func(x_low, y)
-    z = z*0.001
+    z = z*nc
     return z
 
 def toy_2D_conditional_x(x, y_fix, x_high, x_low):
