@@ -64,7 +64,7 @@ conditional_slices_x = np.zeros((len(data_fix), 2))
 conditional_slices_y = np.zeros((len(data_fix), 2))
 for i,data_fixed in enumerate(data_fix):
     conditional_slices_x[i][0] = data_fixed
-    conditional_slices_x[i][1] = toy_2D_marginal_y(data_fixed, x_high, x_low)
+    conditional_slices_x[i][1] = toy_2D_marginal_x(data_fixed, x_high, x_low)
     conditional_slices_y[i][0] = data_fixed
     conditional_slices_y[i][1] = toy_2D_marginal_y(data_fixed, y_high, y_low)
 np.savetxt("./data/processed_data/toy_2D_polynomial_conditional_slices_0.csv", conditional_slices_x, delimiter=",")
