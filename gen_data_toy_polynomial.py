@@ -20,14 +20,14 @@ def toy_2D_marginal_y(y, x_high, x_low):
 
 def toy_2D_conditional_x(x, y_fix, x_high, x_low):
     marginal_prob = toy_2D_marginal_y(y_fix, x_high, x_low)
-    y_fix = np.ones(np.shape(x))
+    y_fix = np.ones(np.shape(x))*y_fix
     z = toy_2D_polynomial(x, y_fix)
     z = z/marginal_prob
     return z
 
 def toy_2D_conditional_y(y, x_fix, y_high, y_low):
     marginal_prob = toy_2D_marginal_x(x_fix, y_high, y_low)
-    x_fix = np.ones(np.shape(y))
+    x_fix = np.ones(np.shape(y))*x_fix
     z = toy_2D_polynomial(x_fix, y)
     z = z/marginal_prob
     return z
