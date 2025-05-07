@@ -67,7 +67,7 @@ c_yd = [[df[:, 2] for df in df_c_data_slices[d]] for d in 1:cfg_data["num_dimens
 
 joint_data_x = vcat([vcat([hcat(x, repeat(info', length(x))) for (x, info) in zip(c_xd[d], c_xd_slice_info[d])]...) for d in 1:cfg_data["num_dimensions"]]...)
 
-joint_data_y = vcat([vcat([y*info for (y, info) in zip(c_yd[1], c_yd_slice_info[1])]...) for d in 1:cfg_data["num_dimensions"]]...)
+joint_data_y = vcat([vcat([y*info for (y, info) in zip(c_yd[d], c_yd_slice_info[d])]...) for d in 1:cfg_data["num_dimensions"]]...)
 #endregion
 
 println("Data Loaded!")
