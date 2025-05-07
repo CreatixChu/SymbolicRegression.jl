@@ -82,7 +82,7 @@ joint_data_x = vcat(
 
 joint_data_y = vcat(
     [
-        vcat([y * info for (y, info) in zip(c_yd[1], c_yd_slice_info[1])]...) for
+        vcat([y * info for (y, info) in zip(c_yd[d], c_yd_slice_info[d])]...) for
         d in 1:cfg_data["num_dimensions"]
     ]...,
 )
