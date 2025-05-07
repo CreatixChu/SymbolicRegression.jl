@@ -65,7 +65,16 @@ c_yd_slice_info = [[df_c_slices[d][i, end] for i in 1:cfg_data["num_conditional_
 c_xd = [[df[:, 1] for df in df_c_data_slices[d]] for d in 1:cfg_data["num_dimensions"]]
 c_yd = [[df[:, 2] for df in df_c_data_slices[d]] for d in 1:cfg_data["num_dimensions"]]
 
-joint_data_x = vcat([vcat([hcat(x, repeat(info', length(x))) for (x, info) in zip(c_xd[d], c_xd_slice_info[d])]...) for d in 1:cfg_data["num_dimensions"]]...)
+function set_joint_data_x(x, info, d)
+    joint_data =  zeros(length(x), cfg_data["num_dimensions"])
+    joint_data[:, d] = x
+    repeat_info = repeat(info', length(x))
+    joint_data[:, 1:(d - 1)] = repeat_info[:, 1:(d - 1)]
+    joint_data[:, (d + 1):cfg_data["num_dimensions"]] = repeat_info[:, d:end]
+    return joint_data
+end
+
+joint_data_x = vcat([vcat([set_joint_data_x(x, info, d) for (x, info) in zip(c_xd[d], c_xd_slice_info[d])]...) for d in 1:cfg_data["num_dimensions"]]...)
 
 joint_data_y = vcat([vcat([y*info for (y, info) in zip(c_yd[d], c_yd_slice_info[d])]...) for d in 1:cfg_data["num_dimensions"]]...)
 #endregion
