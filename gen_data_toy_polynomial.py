@@ -1,4 +1,5 @@
 import numpy as np
+
 nc = 1/3.28e5
 
 def toy_2D_polynomial(x, y):
@@ -50,6 +51,7 @@ data = np.hstack([y.reshape(-1, 1), marginal_y.reshape(-1, 1)])
 np.savetxt("./data/processed_data/toy_2D_polynomial_marginal_data_1.csv", data, delimiter=",")
 
 # Generate conditionals
+np.random.seed(42)
 data_fix = np.random.choice(x, size=10, replace=False)
 for i,data_fixed in enumerate(data_fix):
     conditional_x = toy_2D_conditional_x(x, data_fixed, x_high, x_low)
