@@ -260,12 +260,19 @@ println("Insert ground truth...")
 expr_type = Expression{Float64, Node{Float64}}
 node_type = node_type = Node{Float64}
 metadata = DynamicExpressions.get_metadata(joint_initial_population[1].tree)
-ground_truth_expr = parse_expression(:((1/3.28e5)*(Main.pow4(x1)+x1*Main.pow3(x1)+x1*x1 +x1)), operators=metadata.operators, variable_names=metadata.variable_names, expression_type=expr_type, node_type=node_type)
-all_nodes = collect(ground_truth_expr.tree)
-all_nodes[13].feature = 2
-all_nodes[16].feature = 2
-all_nodes[17].feature = 2
+
 for i in eachindex(joint_initial_population)
+    local c1, c2, c3, c4, c5, ground_truth_expr
+    c1 = 1/1.075 + rand() * 1e-3
+    c2 = 1 + rand() * 1e-3
+    c3 = 1 + rand() * 1e-3
+    c4 = 1 + rand() * 1e-3
+    c5 = 1 + rand() * 1e-3
+    ground_truth_expr = parse_expression(:(($c1)*($c2*Main.pow4(x1)+$c3*x1*Main.pow3(x1)+$c4*x1*x1 + $c5*x1)), operators=metadata.operators, variable_names=metadata.variable_names, expression_type=expr_type, node_type=node_type)
+    all_nodes = collect(ground_truth_expr.tree)
+    all_nodes[15].feature = 2
+    all_nodes[20].feature = 2
+    all_nodes[23].feature = 2
     joint_initial_population[i].tree = deepcopy(ground_truth_expr)
 end
 

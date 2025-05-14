@@ -1,6 +1,6 @@
 import numpy as np
 
-nc = 1/3.28e5
+nc = 1/1.075
 
 def toy_2D_polynomial(x, y):
     z = x**4 + x*y**3 + x*y + y
@@ -33,14 +33,14 @@ def toy_2D_conditional_y(y, x_fix, y_high, y_low):
     z = z/marginal_prob
     return z
 
-x = np.linspace(0, 10, 100)
-y = np.linspace(0, 10, 100)
-
 # Generate data
 y_low = 0
-y_high = 10
+y_high = 1
 x_low = 0
-x_high = 10
+x_high = 1
+
+x = np.linspace(x_low, x_high, 100)
+y = np.linspace(y_low, y_high, 100)
 
 # Generate marginals
 marginal_x = toy_2D_marginal_x(x, y_high, y_low)
