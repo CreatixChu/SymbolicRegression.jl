@@ -1,7 +1,3 @@
-pow2(x) = x^2
-pow3(x) = x^3
-pow4(x) = x^4
-pow5(x) = x^5
 
 data_path = "./data/processed_data"
 prefix = "toy_2D_polynomial"
@@ -22,10 +18,10 @@ const CONFIG_log = Dict(
 
 # operator/constant/variable all have complexity of 1
 const CONFIG_sr = Dict(
-    "binary_operators" => [+, -, *, /],
-    "unary_operators" => [exp, log, pow2, pow3, pow4, pow5],
-    "constraints" => [exp => 4, log => 4],
-    "nested_constraints" => [exp => [exp => 0], log => [log => 0], pow2 => [pow2 => 0], pow3 => [pow3 => 0], pow4 => [pow4 => 0], pow5 => [pow5 => 0]],
+    "binary_operators" => [+, -, *, ^],
+    "unary_operators" => [exp, log],
+    "constraints" => [exp => 4, log => 4, (^) => (1,1)],
+    "nested_constraints" => [exp => [exp => 0], log => [log => 0]],
     "maxsize" => 35,
     "ncycles_per_iteration" => 380,
     "parsimony" => 0.0,
