@@ -313,10 +313,16 @@ println("Joint SR Completed!")
 
 println("Starting second joint SR without initialization!")
 
-joint_hall_of_fame = equation_search(
+joint_hall_of_fame_no_init = equation_search(
     reshape(joint_data_x, cfg_data["num_dimensions"], :),
     joint_data_y;
     options=joint_options_no_init,
     parallelism=cfg_sr["parallelism_for_joint_sr"],
     niterations=cfg_sr["niterations_for_joint_sr"],
 )
+
+# Save the joint hall of fame
+save_path = joinpath(log_dir, "joint_hall_of_fame_no_init.jls")
+open(save_path, "w") do io
+    serialize(io, joint_hall_of_fame_no_init) # to load the data again use deserialze
+end
