@@ -278,7 +278,7 @@ for i in eachindex(joint_initial_population)
     joint_initial_population[i].tree = deepcopy(ground_truth_expr)
 end
 
-println("Alocating expressions to populations...")
+println("Allocating expressions to populations...")
 populations = [
     joint_initial_population[i:(i + (cfg_sr["population_size_for_joint_sr"] - 1))] for i in
     1:cfg_sr["population_size_for_joint_sr"]:(cfg_sr["num_populations_for_joint_sr"] * cfg_sr["population_size_for_joint_sr"])
@@ -287,7 +287,7 @@ populations = [
 println("Starting joint SR call!")
 
 joint_hall_of_fame = equation_search(
-    reshape(joint_data_x, cfg_data["num_dimensions"], :),
+    transpose(joint_data_x),
     joint_data_y;
     options=joint_options,
     initial_populations=populations,
@@ -310,7 +310,7 @@ println("Joint SR Completed!")
 println("Starting second joint SR without initialization!")
 
 joint_hall_of_fame_no_init = equation_search(
-    reshape(joint_data_x, cfg_data["num_dimensions"], :),
+    transpose(joint_data_x),
     joint_data_y;
     options=joint_options_no_init,
     parallelism=cfg_sr["parallelism_for_joint_sr"],
