@@ -96,6 +96,12 @@ joint_data_y = vcat(
     ]...,
 )
 
+joint_data_matrix = hcat(joint_data_x, joint_data_y)
+df_j = DataFrame(joint_data_matrix, [:x1, :x2, :probability])
+
+CSV.write("joint_data.csv", df_j)
+
+
 d_slice_permutations = [
     (d, slice) for d in 1:cfg_data["num_dimensions"] for
     slice in 1:cfg_data["num_conditional_slices"]
@@ -263,11 +269,11 @@ metadata = DynamicExpressions.get_metadata(joint_initial_population[1].tree)
 
 for i in eachindex(joint_initial_population)
     local c1, c2, c3, c4, c5, ground_truth_expr
-    c1 = 1/1.075 + rand() * 1e-3
-    c2 = 1 + rand() * 1e-3
-    c3 = 1 + rand() * 1e-3
-    c4 = 1 + rand() * 1e-3
-    c5 = 1 + rand() * 1e-3
+    c1 = 1/1.075 + rand() * 1e-5
+    c2 = 1 + rand() * 1e-5
+    c3 = 1 + rand() * 1e-5
+    c4 = 1 + rand() * 1e-5
+    c5 = 1 + rand() * 1e-5
     ground_truth_expr = parse_expression(:(($c1)*($c2*Main.pow4(x1)+$c3*x1*Main.pow3(x1)+$c4*x1*x1 + $c5*x1)), operators=metadata.operators, variable_names=metadata.variable_names, expression_type=expr_type, node_type=node_type)
     all_nodes = collect(ground_truth_expr.tree)
     all_nodes[15].feature = 2
