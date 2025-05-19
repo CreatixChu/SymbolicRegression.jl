@@ -21,3 +21,7 @@ predict_true = true_f.(joint_data_x[:,1], joint_data_x[:,2])
 predict_found = found_f.(joint_data_x[:,1], joint_data_x[:,2])
 true_loss_val = LossFunctions.mean(loss, predict_true, joint_data_y)
 found_loss_val = LossFunctions.mean(loss, predict_found, joint_data_y)
+
+
+SymbolicRegression.eval_cost(Dataset(reshape(joint_data_x, 2, :), joint_data_y), joint_hall_of_fame.members[25],joint_options)
+SymbolicRegression.eval_loss(joint_hall_of_fame.members[25].tree, Dataset(reshape(joint_data_x, 2, :), joint_data_y), joint_options)
