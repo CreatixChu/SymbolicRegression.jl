@@ -274,7 +274,7 @@ for i in eachindex(joint_initial_population)
     c3 = 1 + rand() * 1e-5
     c4 = 1 + rand() * 1e-5
     c5 = 1 + rand() * 1e-5
-    ground_truth_expr = parse_expression(:(($c1)*($c2*Main.pow4(x1)+$c3*x1*Main.pow3(x1)+$c4*x1*x1 + $c5*x1)), operators=joint_options.operators, variable_names=["x1", "x2"], expression_type=expr_type, node_type=node_type)
+    ground_truth_expr = parse_expression(:(($c1)*($c2*Main.pow4(x1)+$c3*x1*Main.pow3(x2)+$c4*x1*x2 + $c5*x2)), operators=joint_options.operators, variable_names=["x1", "x2"], expression_type=expr_type, node_type=node_type)
     joint_initial_population[i].tree = deepcopy(ground_truth_expr)
 end
 
