@@ -274,11 +274,7 @@ for i in eachindex(joint_initial_population)
     c3 = 1 + rand() * 1e-5
     c4 = 1 + rand() * 1e-5
     c5 = 1 + rand() * 1e-5
-    ground_truth_expr = parse_expression(:(($c1)*($c2*Main.pow4(x1)+$c3*x1*Main.pow3(x1)+$c4*x1*x1 + $c5*x1)), operators=metadata.operators, variable_names=metadata.variable_names, expression_type=expr_type, node_type=node_type)
-    all_nodes = collect(ground_truth_expr.tree)
-    all_nodes[15].feature = 2
-    all_nodes[20].feature = 2
-    all_nodes[23].feature = 2
+    ground_truth_expr = parse_expression(:(($c1)*($c2*Main.pow4(x1)+$c3*x1*Main.pow3(x1)+$c4*x1*x1 + $c5*x1)), operators=joint_options.operators, variable_names=["x1", "x2"], expression_type=expr_type, node_type=node_type)
     joint_initial_population[i].tree = deepcopy(ground_truth_expr)
 end
 
