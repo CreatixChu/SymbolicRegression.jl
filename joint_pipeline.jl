@@ -6,7 +6,7 @@ using DataFrames
 using Random
 using StatsBase
 using IterTools
-include("./config_management/cluster_toy_polynomial_config.jl")
+include("./config_management/muon_decay_config.jl")
 using Base.Threads
 using LoggingExtras
 using Dates
@@ -262,21 +262,21 @@ if cfg_sr["joint_max_num_expressions"] != Inf
     )
 end
 
-println("Insert ground truth...")
-expr_type = Expression{Float64, Node{Float64}}
-node_type = node_type = Node{Float64}
-metadata = DynamicExpressions.get_metadata(joint_initial_population[1].tree)
+# println("Insert ground truth...")
+# expr_type = Expression{Float64, Node{Float64}}
+# node_type = node_type = Node{Float64}
+# metadata = DynamicExpressions.get_metadata(joint_initial_population[1].tree)
 
-for i in eachindex(joint_initial_population)
-    local c1, c2, c3, c4, c5, ground_truth_expr
-    c1 = 1/1.075 + rand() * 1e-5
-    c2 = 1 + rand() * 1e-5
-    c3 = 1 + rand() * 1e-5
-    c4 = 1 + rand() * 1e-5
-    c5 = 1 + rand() * 1e-5
-    ground_truth_expr = parse_expression(:(($c1)*($c2*Main.pow4(x1)+$c3*x1*Main.pow3(x2)+$c4*x1*x2 + $c5*x2)), operators=joint_options.operators, variable_names=["x1", "x2"], expression_type=expr_type, node_type=node_type)
-    joint_initial_population[i].tree = deepcopy(ground_truth_expr)
-end
+# for i in eachindex(joint_initial_population)
+#     local c1, c2, c3, c4, c5, ground_truth_expr
+#     c1 = 1/1.075 + rand() * 1e-5
+#     c2 = 1 + rand() * 1e-5
+#     c3 = 1 + rand() * 1e-5
+#     c4 = 1 + rand() * 1e-5
+#     c5 = 1 + rand() * 1e-5
+#     ground_truth_expr = parse_expression(:(($c1)*($c2*Main.pow4(x1)+$c3*x1*Main.pow3(x2)+$c4*x1*x2 + $c5*x2)), operators=joint_options.operators, variable_names=["x1", "x2"], expression_type=expr_type, node_type=node_type)
+#     joint_initial_population[i].tree = deepcopy(ground_truth_expr)
+# end
 
 println("Allocating expressions to populations...")
 populations = [

@@ -26,16 +26,16 @@ const CONFIG_sr = Dict(
     "constraints" => [exp => 4, log => 4],
     "nested_constraints" => [exp => [exp => 0], log => [log => 0]],
     "maxsize" => 30,
-    "ncycles_per_iteration" => 380,
+    "ncycles_per_iteration" => 1,
     "parsimony" => 0.0,
     "warmup_maxsize_by" => 0.0,
     "adaptive_parsimony_scaling" => 1040,
     "parallelism_for_marginal_sr" => :multithreading,
     "parallelism_for_conditional_sr" => :multithreading,
     "parallelism_for_joint_sr" => :multithreading,
-    "niterations_for_marginal_sr" => 4000,
-    "niterations_for_conditional_sr" => 2000,
-    "niterations_for_joint_sr" => 4000,
+    "niterations_for_marginal_sr" => 1,
+    "niterations_for_conditional_sr" => 1,
+    "niterations_for_joint_sr" => 1,
     "num_populations_for_marginal_sr" => 15,
     "num_populations_for_conditional_sr" => 15,
     "num_populations_for_joint_sr" => 15,
@@ -45,8 +45,8 @@ const CONFIG_sr = Dict(
     "joint_expression_possibilities" => "cartesian", # "one_to_one" or "cartesian"    
     "joint_max_num_expressions_per_dim_and_slice" => 30, # use Inf to avoid limiting growth in number of expressions per dim and slice when multiplying conditionals and marginals
     "joint_max_num_expressions" => 450, # use Inf to avoid limiting number of expressions
-    "progress" => false,
-    "verbosity" => false,
+    "progress" => true,
+    "verbosity" => true,
     "joint_use_frequency" => false,
     "joint_use_frequency_in_tournament" => false
 )
