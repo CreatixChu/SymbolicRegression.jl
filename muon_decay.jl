@@ -7,7 +7,7 @@ using DataFrames
 using Random
 using StatsBase
 using IterTools
-include("./config_management/cluster_toy_polynomial_config.jl")
+include("./config_management/muon_decay_config.jl")
 using Base.Threads
 using LoggingExtras
 using Dates
